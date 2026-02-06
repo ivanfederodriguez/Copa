@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+ENV/
+
+# Environment Variables
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data (Keep JSON and CSV if they are needed for first load, but usually we ignore them if generated)
+# dashboard_data.json
+# consolidado_copa.csv
+
+# IDEs
+.vscode/
+.idea/
