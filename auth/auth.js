@@ -116,7 +116,9 @@ const Auth = (function () {
         logout: function () {
             clearSession();
             // Redirect to main dashboard (public) instead of login
-            window.location.href = '/index.html';
+            // Use relative path to work on both localhost and GitHub Pages
+            const basePath = window.location.pathname.substring(0, window.location.pathname.indexOf('/', 1) + 1);
+            window.location.href = basePath || '/';
         },
 
         /**
@@ -144,7 +146,9 @@ const Auth = (function () {
             if (!this.isAuthenticated()) {
                 // Store the intended destination
                 sessionStorage.setItem('redirect_after_login', window.location.pathname);
-                window.location.href = '/login.html';
+                // Use relative path to work on both localhost and GitHub Pages
+                const basePath = window.location.pathname.substring(0, window.location.pathname.indexOf('/', 1) + 1);
+                window.location.href = (basePath || '/') + 'login.html';
                 return false;
             }
             return true;
