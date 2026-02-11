@@ -36,7 +36,7 @@ function formatCurrency(value) {
 
 function formatPercentage(value) {
     const sign = value >= 0 ? '+' : '';
-    const formattedValue = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+    const formattedValue = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value);
     return `${sign}${formattedValue}%`;
 }
 
@@ -44,36 +44,53 @@ function formatNumber(value) {
     return new Intl.NumberFormat('es-AR').format(value);
 }
 
-function formatDecimal(value, digits = 2) {
+function formatDecimal(value, digits = 1) {
     return new Intl.NumberFormat('es-AR', { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
 }
 
 function renderKPIs(kpi) {
-    // kpi-avg-salary
-    document.getElementById('kpi-avg-salary').textContent = formatCurrency(kpi.salario_promedio);
-
     // kpi-employees (Shown as subtext)
     document.getElementById('kpi-employees').textContent = `Empleados: ${formatNumber(kpi.empleados)} | ${kpi.periodo_actual}`;
 
-    // kpi-total-wage
-    document.getElementById('kpi-total-wage').textContent = new Intl.NumberFormat('es-AR', {
-        style: 'currency',
-        currency: 'ARS',
-        maximumFractionDigits: 0,
-        minimumFractionDigits: 0
-    }).format(kpi.masa_salarial) + ' M';
+    if (kpi.is_incomplete) {
+        // Handle Incomplete Data
+        document.getElementById('kpi-avg-salary').textContent = 'Sin datos';
+        document.getElementById('kpi-total-wage').textContent = 'Sin datos';
 
-    // kpi-nom-var
-    const nomVarEl = document.getElementById('kpi-nom-var');
-    nomVarEl.textContent = formatPercentage(kpi.var_nominal_ia);
-    nomVarEl.className = `kpi-value ${kpi.var_nominal_ia >= 0 ? 'text-success' : 'text-danger'}`;
-    document.getElementById('label-nom-period').textContent = `vs ${kpi.periodo_anterior}`;
+        const nomVarEl = document.getElementById('kpi-nom-var');
+        nomVarEl.textContent = 'Sin datos';
+        nomVarEl.className = 'kpi-value text-secondary';
 
-    // kpi-real-var
-    const realVarEl = document.getElementById('kpi-real-var');
-    realVarEl.textContent = formatPercentage(kpi.var_real_ia);
-    realVarEl.className = `kpi-value ${kpi.var_real_ia >= 0 ? 'text-success' : 'text-danger'}`;
-    document.getElementById('label-real-period').innerHTML = `Ajustado por IPC NEA<br>vs ${kpi.periodo_anterior}`;
+        const realVarEl = document.getElementById('kpi-real-var');
+        realVarEl.textContent = 'Sin datos';
+        realVarEl.className = 'kpi-value text-secondary';
+
+        document.getElementById('label-nom-period').textContent = '-';
+        document.getElementById('label-real-period').textContent = '-';
+
+    } else {
+        // Render Normal Data
+        document.getElementById('kpi-avg-salary').textContent = formatCurrency(kpi.salario_promedio);
+
+        document.getElementById('kpi-total-wage').textContent = new Intl.NumberFormat('es-AR', {
+            style: 'currency',
+            currency: 'ARS',
+            maximumFractionDigits: 0,
+            minimumFractionDigits: 0
+        }).format(kpi.masa_salarial) + ' M';
+
+        // kpi-nom-var
+        const nomVarEl = document.getElementById('kpi-nom-var');
+        nomVarEl.textContent = formatPercentage(kpi.var_nominal_ia);
+        nomVarEl.className = `kpi-value ${kpi.var_nominal_ia >= 0 ? 'text-success' : 'text-danger'}`;
+        document.getElementById('label-nom-period').textContent = `vs ${kpi.periodo_anterior}`;
+
+        // kpi-real-var
+        const realVarEl = document.getElementById('kpi-real-var');
+        realVarEl.textContent = formatPercentage(kpi.var_real_ia);
+        realVarEl.className = `kpi-value ${kpi.var_real_ia >= 0 ? 'text-success' : 'text-danger'}`;
+        document.getElementById('label-real-period').innerHTML = `Ajustado por IPC NEA<br>vs ${kpi.periodo_anterior}`;
+    }
 
     // Update Header Period
     document.getElementById('header-period').textContent = `Análisis de puestos de trabajo y masa salarial | ${kpi.periodo_actual}`;
@@ -89,8 +106,13 @@ function renderKPIs(kpi) {
 
     // kpi-cbt-ratio
     const cbtRatioEl = document.getElementById('kpi-cbt-ratio');
-    cbtRatioEl.textContent = formatDecimal(kpi.cbt_ratio);
-    cbtRatioEl.className = `kpi-value ${kpi.cbt_ratio >= 1.5 ? 'text-success' : 'text-danger'}`;
+    if (kpi.is_incomplete) {
+        cbtRatioEl.textContent = 'Sin datos';
+        cbtRatioEl.className = 'kpi-value text-secondary';
+    } else {
+        cbtRatioEl.textContent = formatDecimal(kpi.cbt_ratio);
+        cbtRatioEl.className = `kpi-value ${kpi.cbt_ratio >= 1.5 ? 'text-success' : 'text-danger'}`;
+    }
 }
 
 function renderCharts(charts) {
@@ -181,7 +203,7 @@ function renderCharts(charts) {
                     grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false },
                     ticks: {
                         font: { size: 11 },
-                        callback: (value) => new Intl.NumberFormat('es-AR', { notation: "compact", style: 'currency', currency: 'ARS' }).format(value).replace('.0', '')
+                        callback: (value) => new Intl.NumberFormat('es-AR', { notation: "compact", style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(value)
                     }
                 },
                 x: {

@@ -19,164 +19,173 @@
 
 <body>
 
-    <header>
-        <div class="brand">
+    <!-- Mobile Nav Toggle -->
+    <button class="mobile-nav-toggle" id="mobileNavToggle">
+        ☰
+    </button>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
             <a href="index.html">
                 <img src="logo-blanco.png" alt="IPECD" class="logo-img">
             </a>
         </div>
 
-        <!-- Horizontal Navigation for Desktop -->
-        <nav class="nav-horizontal" id="navHorizontal">
-            <a href="index.html" class="nav-link-horizontal active">Inicio</a>
-            <a href="../monitor-mensual/index.html" class="nav-link-horizontal" id="navMonitor"
+        <nav class="nav-vertical">
+            <a href="index.html" class="nav-link-vertical active">Inicio</a>
+            <a href="../monitor-mensual/index.html" class="nav-link-vertical" id="navMonitor"
                 style="display: none;">Monitor Mensual</a>
-            <a href="../analisis-anual/index.html" class="nav-link-horizontal" id="navAnual"
+            <a href="../analisis-anual/index.html" class="nav-link-vertical" id="navAnual"
                 style="display: none;">Análisis Anual</a>
-            <a href="../analisis-personal/index.html" class="nav-link-horizontal" id="navPersonal"
+            <a href="../analisis-personal/index.html" class="nav-link-vertical" id="navPersonal"
                 style="display: none;">Análisis Salarial</a>
         </nav>
 
-        <!-- User section / Login button -->
-        <div class="header-actions">
+        <div class="sidebar-footer">
             <!-- Login button (visible when not authenticated) -->
-            <a href="../login.html" class="btn-header-login" id="btnHeaderLogin">
+            <a href="../login.html" class="btn-sidebar-login" id="btnHeaderLogin">
                 <span class="login-icon">🔐</span>
                 Iniciar Sesión
             </a>
 
-            <!-- User info (visible when authenticated) -->
+            <!-- User Info (visible when authenticated) -->
             <div class="nav-user-header" id="navUserHeader" style="display: none;">
                 <span class="user-icon">👤</span>
                 <span class="user-name" id="userName">Usuario</span>
-                <button class="btn-logout-header" id="btnLogout" title="Cerrar sesión">
-                    Salir
-                </button>
-            </div>
-
-            <!-- Mobile menu toggle -->
-            <button class="nav-toggle" id="nav-toggle" aria-label="Abrir menú">
-                <span></span>
-                <span></span>
-                <span></span>
-            </button>
-        </div>
-
-        <!-- Mobile dropdown menu -->
-        <nav class="nav-menu-mobile" id="navMenuMobile">
-            <a href="index.html" class="nav-link active">Inicio</a>
-            <a href="../monitor-mensual/index.html" class="nav-link" id="navMonitorMobile"
-                style="display: none;">Monitor Mensual</a>
-            <a href="../analisis-anual/index.html" class="nav-link" id="navAnualMobile" style="display: none;">Análisis
-                Anual</a>
-            <a href="../analisis-personal/index.html" class="nav-link" id="navPersonalMobile"
-                style="display: none;">Análisis Salarial</a>
-
-            <!-- User section in mobile menu -->
-            <div class="nav-user-mobile" id="navUserMobile" style="display: none;">
-                <span class="user-icon">👤</span>
-                <span class="user-name" id="userNameMobile">Usuario</span>
-                <button class="btn-logout" id="btnLogoutMobile" title="Cerrar sesión">
-                    Salir
-                </button>
-            </div>
-        </nav>
-    </header>
-
-    <main>
-        <div class="header-content" style="text-align: center; margin-bottom: 3rem;">
-            <h1 style="font-size: 3rem; margin-bottom: 1rem;" class="text-gradient">Tablero Ejecutivo Provincial</h1>
-            <p style="color: var(--text-secondary); font-size: 1.1rem; max-width: 600px; margin: 0 auto;">
-                Indicadores Clave de Gestión: Coparticipación y Salarios
-            </p>
-        </div>
-
-        <!-- KPI Grid -->
-        <section class="hero-grid">
-            <!-- 1. Var Real Coparticipación -->
-            <article class="kpi-card">
-                <div class="kpi-label">Evolución Real Coparticipación</div>
-                <div class="kpi-value" id="kpi-copa-var-real">Loading...</div>
-                <div class="kpi-sub">
-                    <span style="color: var(--text-secondary);">Interanual (vs Enero 2025)</span>
-                </div>
-            </article>
-
-            <!-- 2. Cobertura Salarial -->
-            <article class="kpi-card">
-                <div class="kpi-label">Cobertura Salarial</div>
-                <div class="kpi-value" id="kpi-cobertura">Loading...</div>
-                <div class="kpi-sub">
-                    <span style="color: var(--text-secondary);">Recursos que cubren la nómina</span>
-                </div>
-            </article>
-
-            <!-- 3. Variación Real Salario -->
-            <article class="kpi-card">
-                <div class="kpi-label">Recuperación Salarial Real</div>
-                <div class="kpi-value" id="kpi-salario-var-real">Loading...</div>
-                <div class="kpi-sub">
-                    <span style="color: var(--text-secondary);">Variación i.a. Deflactada</span>
-                </div>
-            </article>
-
-            <!-- 4. Ratio CBT -->
-            <article class="kpi-card">
-                <div class="kpi-label">Poder de Compra</div>
-                <div class="kpi-value" id="kpi-cbt-ratio">Loading...</div>
-                <div class="kpi-sub">
-                    <span style="color: var(--text-secondary);">Canastas Básicas por Salario</span>
-                </div>
-            </article>
-        </section>
-
-
-        <!-- Chart Section -->
-        <section class="chart-container">
-            <div class="section-header">
-                <div>
-                    <h2 class="section-title">Coparticipación vs Inflación</h2>
-                    <p class="section-subtitle">Relación de variaciones interanuales últimos 12 meses</p>
-                </div>
-            </div>
-            <div class="chart-wrapper">
-                <canvas id="executiveChart"></canvas>
-            </div>
-            <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 1rem; text-align: left;">
-                Fuente: SISPER e IPECD
-            </p>
-        </section>
-
-    </main>
-
-    <footer>
-        <div class="footer-content">
-            <div class="footer-branding">
-                <img src="logo-blanco.png" alt="IPECD" class="footer-logo">
-                <div class="footer-text">
-                    <p class="copyright">©2025 INSTITUTO DE ESTADÍSTICA Y CIENCIA DE DATOS DE LA PROVINCIA DE
-                        CORRIENTES.</p>
-                    <p class="contact">estadistica@corrientes.gob.ar</p>
-                    <p class="contact">Todos los derechos reservados.</p>
-                </div>
-            </div>
-            <div class="footer-social">
-                <span class="social-label">Seguinos</span>
-                <div class="social-icons">
-                    <a href="https://github.com/estadisticactes" aria-label="GitHub" class="social-link" target="_blank"
-                        rel="noopener noreferrer">
-                        <svg viewBox="0 0 24 24">
-                            <path
-                                d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12">
-                            </path>
-                        </svg>
-                    </a>
-                </div>
+                <button class="btn-logout-header" id="btnLogout" title="Cerrar sesión">Salir</button>
             </div>
         </div>
-    </footer>
+    </aside>
 
-    <script src="script_home.js"></script>
+    <!-- Main Content Wrapper -->
+    <div class="main-content-wrapper">
+
+        <main>
+            <div class="header-content" style="text-align: center; margin-bottom: 3rem;">
+                <h1 class="text-gradient dashboard-title">Tablero Ejecutivo Provincial</h1>
+                <p style="color: var(--text-secondary); font-size: 1.1rem; max-width: 600px; margin: 0 auto;">
+                    Indicadores Clave de Gestión: Coparticipación y Salarios
+                </p>
+            </div>
+
+            <!-- KPI Grid -->
+            <section class="hero-grid">
+                <!-- 1. Var Real Coparticipación -->
+                <article class="kpi-card">
+                    <div class="kpi-label">Evolución Real Coparticipación</div>
+                    <div class="kpi-value" id="kpi-copa-var-real">Loading...</div>
+                    <div class="kpi-sub">
+                        <span style="color: var(--text-secondary);">Interanual (vs Enero 2025)</span>
+                    </div>
+                </article>
+
+                <!-- 2. Cobertura Salarial -->
+                <article class="kpi-card">
+                    <div class="kpi-label">Cobertura Salarial</div>
+                    <div class="kpi-value" id="kpi-cobertura">Loading...</div>
+                    <div class="kpi-sub">
+                        <span style="color: var(--text-secondary);">Recursos que cubren la nómina</span>
+                    </div>
+                </article>
+
+                <!-- 3. Variación Real Salario -->
+                <article class="kpi-card">
+                    <div class="kpi-label">Recuperación Salarial Real</div>
+                    <div class="kpi-value" id="kpi-salario-var-real">Loading...</div>
+                    <div class="kpi-sub">
+                        <span style="color: var(--text-secondary);">Variación i.a. Deflactada</span>
+                    </div>
+                </article>
+
+                <!-- 4. Ratio CBT -->
+                <article class="kpi-card">
+                    <div class="kpi-label">Poder de Compra</div>
+                    <div class="kpi-value" id="kpi-cbt-ratio">Loading...</div>
+                    <div class="kpi-sub">
+                        <span style="color: var(--text-secondary);">Canastas Básicas por Salario</span>
+                    </div>
+                </article>
+            </section>
+
+
+            <!-- Chart Section (Single Chart - Top) -->
+            <section class="chart-container">
+                <div class="section-header">
+                    <div>
+                        <h2 class="section-title">Coparticipación vs Inflación</h2>
+                        <p class="section-subtitle">Relación de variaciones interanuales últimos 12 meses</p>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="executiveChart"></canvas>
+                </div>
+                <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 1rem; text-align: left;">
+                    Fuente: INDEC y Ministerio de Economía de la Nación
+                </p>
+            </section>
+
+            <!-- New Chart Grid (Purchasing Power & Coverage - Bottom) -->
+            <section class="charts-grid-half">
+                <!-- Purchasing Power Chart -->
+                <div class="chart-container" style="margin-bottom: 0;">
+                    <div class="section-header">
+                        <div>
+                            <h2 class="section-title">Poder de Compra</h2>
+                            <p class="section-subtitle">Salario Promedio / CBT NEA</p>
+                        </div>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="purchasingPowerChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Coverage Chart -->
+                <div class="chart-container" style="margin-bottom: 0;">
+                    <div class="section-header">
+                        <div>
+                            <h2 class="section-title">Cobertura Salarial</h2>
+                            <p class="section-subtitle" id="coverageSubtitle">Masa Salarial vs Resto de Coparticipación
+                            </p>
+                        </div>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="coverageChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <footer>
+            <div class="footer-content">
+                <div class="footer-branding">
+                    <img src="logo-blanco.png" alt="IPECD" class="footer-logo">
+                    <div class="footer-text">
+                        <p class="copyright">©2025 INSTITUTO DE ESTADÍSTICA Y CIENCIA DE DATOS DE LA PROVINCIA DE
+                            CORRIENTES.</p>
+                        <p class="contact">estadistica@corrientes.gob.ar</p>
+                        <p class="contact">Todos los derechos reservados.</p>
+                    </div>
+                </div>
+                <div class="footer-social">
+                    <span class="social-label">Seguinos</span>
+                    <div class="social-icons">
+                        <a href="https://github.com/estadisticactes" aria-label="GitHub" class="social-link"
+                            target="_blank" rel="noopener noreferrer">
+                            <svg viewBox="0 0 24 24">
+                                <path
+                                    d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12">
+                                </path>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+    </div> <!-- End Main Content Wrapper -->
+    <script src="script_home.js?v=2"></script>
 </body>
 
 </html>

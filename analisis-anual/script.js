@@ -2,7 +2,7 @@
 let dashboardData = {};
 let annualChart = null;
 
-const formatterDecimal = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const formatterDecimal = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const formatterInteger = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 });
 const formatterOneDecimal = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
@@ -241,8 +241,8 @@ function renderMixedChart(periods, baseLabel) {
                         label: function (ctx) {
                             let val = ctx.raw;
                             let label = '';
-                            if (val >= 1_000_000_000_000) label = `$${formatterDecimal.format(val / 1e12)} Billones`;
-                            else label = `$${formatterInteger.format(val / 1e9)} Mil M`;
+                            if (val >= 1_000_000_000_000) label = `$${formatterInteger.format(Math.round(val / 1e12))} Billones`;
+                            else label = `$${formatterInteger.format(Math.round(val / 1e9))} Mil M`;
                             return `${ctx.dataset.label}: ${label}`;
                         }
                     }
@@ -252,7 +252,7 @@ function renderMixedChart(periods, baseLabel) {
                 y: {
                     border: { display: false },
                     grid: { color: 'rgba(0,0,0,0.05)' },
-                    ticks: { color: '#64748b', font: { weight: '500' }, callback: (val) => formatterOneDecimal.format(val / 1e12) + 'B' },
+                    ticks: { color: '#64748b', font: { weight: '500' }, callback: (val) => formatterInteger.format(Math.round(val / 1e12)) + 'B' },
                 },
                 x: {
                     grid: { display: false },
@@ -301,8 +301,8 @@ function renderNominalChart(periods) {
                     callbacks: {
                         label: function (ctx) {
                             let val = ctx.raw;
-                            if (val >= 1_000_000_000_000) return `$${formatterDecimal.format(val / 1e12)} Billones`;
-                            return `$${formatterInteger.format(val / 1e9)} Mil M`;
+                            if (val >= 1_000_000_000_000) return `$${formatterInteger.format(Math.round(val / 1e12))} Billones`;
+                            return `$${formatterInteger.format(Math.round(val / 1e9))} Mil M`;
                         }
                     }
                 }
@@ -352,8 +352,8 @@ function renderRealChart(periods, baseLabel) {
                     callbacks: {
                         label: function (ctx) {
                             let val = ctx.raw;
-                            if (val >= 1_000_000_000_000) return `$${formatterDecimal.format(val / 1e12)} Billones`;
-                            return `$${formatterInteger.format(val / 1e9)} Mil M`;
+                            if (val >= 1_000_000_000_000) return `$${formatterInteger.format(Math.round(val / 1e12))} Billones`;
+                            return `$${formatterInteger.format(Math.round(val / 1e9))} Mil M`;
                         }
                     }
                 }

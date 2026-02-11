@@ -85,6 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(([mainData, personalData]) => {
             renderKPIs(mainData, personalData);
             renderChart(mainData);
+            renderSecondaryCharts(mainData);
         })
         .catch(error => console.error('Error loading dashboard data:', error));
 
@@ -109,8 +110,27 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function renderKPIs(mainData, personalData) {
-    // 1. Evolución Real Coparticipación (Main)
+    // 0. Update Main Title (Dynamic)
     const currentPeriodId = mainData.meta.default_period_id; // '2026-01'
+    const [year, month] = currentPeriodId.split('-');
+
+    // Find label for this period in available_periods if possible
+    let periodLabel = 'Periodo';
+    let periodYear = year;
+
+    if (mainData.meta && mainData.meta.available_periods) {
+        const periodObj = mainData.meta.available_periods.find(p => p.id === currentPeriodId);
+        if (periodObj) {
+            periodLabel = periodObj.label;
+        }
+    }
+
+    const dashboardTitle = document.querySelector('.dashboard-title');
+    if (dashboardTitle) {
+        dashboardTitle.textContent = `Tablero Ejecutivo Provincial - ${periodLabel} ${periodYear}`;
+    }
+
+    // 1. Evolución Real Coparticipación (Main)
     const copaData = mainData.data[currentPeriodId].kpi.recaudacion;
     const kpiCopaReal = copaData.var_real;
 
@@ -130,7 +150,7 @@ function renderKPIs(mainData, personalData) {
     const kpiCbtRatio = personalData.kpi.cbt_ratio;
     const el = document.getElementById('kpi-cbt-ratio');
     if (el) {
-        el.textContent = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(kpiCbtRatio);
+        el.textContent = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(kpiCbtRatio);
         el.className = `kpi-value ${kpiCbtRatio >= 1.5 ? 'text-success' : 'text-danger'}`;
     }
 }
@@ -144,7 +164,7 @@ function updateKPI(elementId, value, useColor = true, isCoverage = false) {
         return;
     }
 
-    const formatter = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const formatter = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
     const formatted = formatter.format(Math.abs(value)) + '%';
     const sign = value > 0 ? '+' : (value < 0 ? '-' : '');
 
@@ -168,39 +188,75 @@ function renderChart(mainData) {
     const chartData = mainData.global_charts;
 
     new Chart(ctx, {
-        type: 'bar',
+        type: 'line',
         data: {
             labels: chartData.labels,
             datasets: [
                 {
                     label: 'Var. Interanual Coparticipación (%)',
                     data: chartData.copa_var_interanual,
-                    backgroundColor: '#10b981', // Brand Green
-                    borderColor: '#10b981',
-                    borderWidth: 1
+                    borderColor: '#10b981', // Brand Green
+                    backgroundColor: 'transparent',
+                    borderWidth: 3,
+                    tension: 0.3,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    fill: false
                 },
                 {
                     label: 'Inflación Interanual (%)',
                     data: chartData.ipc_var_interanual,
-                    backgroundColor: '#94a3b8', // Slate Gray
-                    borderColor: '#94a3b8',
-                    borderWidth: 1
+                    borderColor: '#94a3b8', // Slate Gray
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    tension: 0.3,
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                    fill: false
                 }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
             plugins: {
                 legend: {
                     position: 'top',
-                    labels: { color: '#64748b', font: { weight: '600' } }
+                    labels: {
+                        color: '#64748b',
+                        font: { weight: '600' },
+                        usePointStyle: true,
+                        padding: 20
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    titleColor: '#1e293b',
+                    bodyColor: '#475569',
+                    borderColor: 'rgba(0,0,0,0.1)',
+                    borderWidth: 1,
+                    padding: 12,
+                    callbacks: {
+                        label: function (context) {
+                            let label = context.dataset.label || '';
+                            if (label) label += ': ';
+                            if (context.parsed.y !== null) {
+                                label += Math.round(context.parsed.y) + '%';
+                            }
+                            return label;
+                        }
+                    }
                 }
             },
             scales: {
                 y: {
                     grid: { color: 'rgba(0,0,0,0.05)' },
-                    ticks: { callback: val => val.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%' }
+                    ticks: { callback: val => val.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + '%' }
                 },
                 x: {
                     grid: { display: false }
@@ -208,4 +264,97 @@ function renderChart(mainData) {
             }
         }
     });
+}
+
+function renderSecondaryCharts(mainData) {
+    if (!mainData.secondary_charts) return;
+
+    // --- Purchasing Power Chart ---
+    const ppData = mainData.secondary_charts.purchasing_power;
+    if (ppData) {
+        const ctxPP = document.getElementById('purchasingPowerChart').getContext('2d');
+        new Chart(ctxPP, {
+            type: 'bar',
+            data: {
+                labels: ppData.labels,
+                datasets: [{
+                    label: 'Salarios Promedio / CBT NEA',
+                    data: ppData.values,
+                    backgroundColor: '#0ea5e9', // Sky Blue
+                    borderWidth: 0,
+                    borderRadius: 4,
+                    barPercentage: 0.6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                return context.raw.toFixed(2) + ' CBTs';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        grid: { color: 'rgba(0,0,0,0.05)' },
+                        title: { display: true, text: 'Canastas' }
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    // --- Coverage Chart ---
+    const covData = mainData.secondary_charts.coverage;
+    if (covData) {
+        // Update subtitle
+        const subtitle = document.getElementById('coverageSubtitle');
+        if (subtitle && covData.period) {
+            subtitle.textContent = `Masa Salarial vs Resto (${covData.period})`;
+        }
+
+        const ctxCov = document.getElementById('coverageChart').getContext('2d');
+        new Chart(ctxCov, {
+            type: 'doughnut',
+            data: {
+                labels: ['Masa Salarial', 'Resto Coparticipación'],
+                datasets: [{
+                    data: [covData.masa_salarial, covData.resto_copa],
+                    backgroundColor: [
+                        '#eab308', // Yellow (Wage Bill)
+                        '#10b981'  // Green (Rest)
+                    ],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { usePointStyle: true, padding: 20 }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                const val = context.raw;
+                                const total = context.chart._metasets[context.datasetIndex].total;
+                                const pct = ((val / total) * 100).toFixed(1);
+                                return `${context.label}: ${pct}% ($${(val / 1000000).toFixed(0)}M)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
 }

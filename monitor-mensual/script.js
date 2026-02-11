@@ -42,7 +42,7 @@ function initMonthSelector(periods) {
     periods.forEach(period => {
         const option = document.createElement('option');
         option.value = period.id;
-        option.textContent = period.label;
+        option.textContent = period.label + ' ' + period.year;
         selector.appendChild(option);
     });
 
@@ -69,61 +69,59 @@ function renderDashboard(periodId) {
 
     const periodData = dashboardData.data[periodId];
 
+    // Parse Year and Month from Period ID (e.g., "2026-01")
+    const [yearStr, monthStr] = periodId.split('-');
+    const currentYear = parseInt(yearStr);
+    const prevYear = currentYear - 1;
+
     // Update KPI Grid
     renderKPIs(periodData.kpi);
 
-    // Update Header Text for clarity (Optional, but good UX)
-    // The h1 says "Enero 2026", we might want to update it or leave it generic?
-    // User requested selector, not changing header. But "Analisis Enero 2026" looks static.
-    // Let's check index.html content. It has <h1>Coparticipación... - Analisis Enero 2026</h1>
-    // We should probably update that too if we want true dynamic behavior.
+    // Dynamic Labels
+    const periodLabel = periodData.kpi.meta.periodo; // "Enero 2026"
+    const monthName = periodLabel.split(' ')[0]; // "Enero"
+
     // Update Header Text
     const headerTitle = document.querySelector('h1.text-gradient');
     if (headerTitle) {
         headerTitle.textContent = `Coparticipación Federal - Análisis ${periodData.kpi.meta.periodo}`;
     }
 
-    // Extract month name for other labels (e.g. "Enero 2026" -> "Enero")
-    const periodLabel = periodData.kpi.meta.periodo; // "Enero 2026"
-    const monthName = periodLabel.split(' ')[0]; // "Enero"
-
     // Update Main Subtitle
     const mainSubtitle = document.getElementById('main-subtitle');
     if (mainSubtitle) {
-        mainSubtitle.textContent = `Análisis comparativo del comportamiento de transferencias nacionales (CFI Neta de Ley 26075) para el período ${monthName} 2025 vs ${monthName} 2026.`;
+        mainSubtitle.textContent = `Análisis comparativo del comportamiento de transferencias nacionales (CFI Neta de Ley 26075) para el período ${monthName} ${prevYear} vs ${monthName} ${currentYear}.`;
     }
 
     // Update Recaudación Labels
     const lblRecCurrent = document.getElementById('label-recaudacion-current');
-    if (lblRecCurrent) lblRecCurrent.textContent = `Recaudación ${monthName} 2026`;
+    if (lblRecCurrent) lblRecCurrent.textContent = `Recaudación ${monthName} ${currentYear}`;
 
     const lblRecPrev = document.getElementById('label-recaudacion-prev');
-    if (lblRecPrev) lblRecPrev.textContent = `Recaudación ${monthName} 2025`;
+    if (lblRecPrev) lblRecPrev.textContent = `Recaudación ${monthName} ${prevYear}`;
 
     // Update Masa Salarial Subtitle
     const masaSubtitle = document.getElementById('masa-salarial-subtitle');
     if (masaSubtitle) {
-        masaSubtitle.textContent = `Relación entre Coparticipación y Masa Salarial para ${monthName} 2025 vs 2026`;
+        masaSubtitle.textContent = `Relación entre Coparticipación y Masa Salarial para ${monthName} ${prevYear} vs ${currentYear}`;
     }
 
     // Update Masa Salarial Labels
     const lblMasaCurrent = document.getElementById('label-masa-current');
-    if (lblMasaCurrent) lblMasaCurrent.textContent = `Masa Salarial ${monthName} 2026`;
+    if (lblMasaCurrent) lblMasaCurrent.textContent = `Masa Salarial ${monthName} ${currentYear}`;
 
     const lblMasaPrev = document.getElementById('label-masa-prev');
-    if (lblMasaPrev) lblMasaPrev.textContent = `Masa Salarial ${monthName} 2025`;
+    if (lblMasaPrev) lblMasaPrev.textContent = `Masa Salarial ${monthName} ${prevYear}`;
 
     // Update Chart Title
     const chartTitle = document.getElementById('chart-title');
     if (chartTitle) chartTitle.textContent = `Comportamiento Diario ${monthName}`;
 
     // Update Chart
-    // Destroy existing chart instance if exists? Chart.js usually needs that or update().
-    // We didn't keep reference globally. Let's modify renderChart to handle existing instance.
-    renderChart(periodData.charts.daily, periodData.kpi.meta.periodo);
+    renderChart(periodData.charts.daily, monthName, currentYear, prevYear);
 }
 
-// ... Format functions remain same ...
+// ... Format functions ...
 function formatCurrency(value) {
     if (value === undefined || value === null) return 'N/A';
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(value * 1000000);
@@ -136,7 +134,7 @@ function formatMillions(value) {
 function formatPercentage(value) {
     if (value === undefined || value === null) return 'N/A';
     const sign = value >= 0 ? '+' : '';
-    const formattedValue = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+    const formattedValue = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value);
     return `${sign}${formattedValue}%`;
 }
 
@@ -154,47 +152,75 @@ function renderKPIs(kpi) {
     const recVarNomSub = document.getElementById('kpi-recaudacion-var-nom-pct');
     recVarNomSub.textContent = (kpi.recaudacion.var_nom >= 0 ? '▲ ' : '▼ ') + formatPercentage(kpi.recaudacion.var_nom).replace('+', '');
 
-    // Var Real
+    // Var Real (Check IPC Missing)
     const recVarRealEl = document.getElementById('real-var-val');
-    recVarRealEl.textContent = formatPercentage(kpi.recaudacion.var_real);
-    recVarRealEl.className = `kpi-value ${kpi.recaudacion.var_real >= 0 ? 'text-success' : 'text-secondary'}`;
-    if (kpi.recaudacion.var_real < 0) recVarRealEl.classList.add('text-danger');
 
+    if (kpi.recaudacion.ipc_missing) {
+        recVarRealEl.textContent = 'Sin datos';
+        recVarRealEl.className = 'kpi-value text-secondary';
+    } else {
+        recVarRealEl.textContent = formatPercentage(kpi.recaudacion.var_real);
+        recVarRealEl.className = `kpi-value ${kpi.recaudacion.var_real >= 0 ? 'text-success' : 'text-secondary'}`;
+        if (kpi.recaudacion.var_real < 0) recVarRealEl.classList.add('text-danger');
+    }
 
     // --- Masa Salarial ---
-    document.getElementById('kpi-masa-current').textContent = formatMillions(kpi.masa_salarial.current);
-    document.getElementById('kpi-masa-prev').textContent = formatMillions(kpi.masa_salarial.prev);
+    const masaCurrentEl = document.getElementById('kpi-masa-current');
 
     // Cobertura text
-    document.getElementById('kpi-masa-cob-current').textContent = `Cobertura: ${kpi.masa_salarial.cobertura_current.toFixed(2)}%`;
-    document.getElementById('kpi-masa-cob-prev').textContent = `Cobertura: ${kpi.masa_salarial.cobertura_prev.toFixed(2)}%`;
+    document.getElementById('kpi-masa-cob-current').textContent = `Cobertura: ${kpi.masa_salarial.cobertura_current.toFixed(1)}%`;
+    document.getElementById('kpi-masa-cob-prev').textContent = `Cobertura: ${kpi.masa_salarial.cobertura_prev.toFixed(1)}%`;
+
+    // Masse Salarial Logic - Check for incomplete data
+    const isIncomplete = kpi.masa_salarial.is_incomplete;
+    const isIpcMissing = kpi.recaudacion.ipc_missing;
+
+    // Masa Current
+    if (isIncomplete) {
+        masaCurrentEl.textContent = 'Sin datos';
+        // Optional: change style to gray?
+    } else {
+        masaCurrentEl.textContent = formatMillions(kpi.masa_salarial.current);
+    }
+
+    document.getElementById('kpi-masa-prev').textContent = formatMillions(kpi.masa_salarial.prev);
 
     // Var Nominal Masa
     const masaVarNomEl = document.getElementById('kpi-masa-var-nom');
-    const masaDiffSign = kpi.masa_salarial.diff_nom >= 0 ? '+' : '';
-    masaVarNomEl.textContent = masaDiffSign + formatMillions(Math.abs(kpi.masa_salarial.diff_nom));
-    masaVarNomEl.className = `kpi-value ${kpi.masa_salarial.diff_nom >= 0 ? 'text-success' : 'text-danger'}`;
-
     const masaVarNomSub = document.getElementById('kpi-masa-var-nom-pct');
-    masaVarNomSub.textContent = (kpi.masa_salarial.var_nom >= 0 ? '▲ ' : '▼ ') + formatPercentage(kpi.masa_salarial.var_nom).replace('+', '');
+
+    if (isIncomplete) {
+        masaVarNomEl.textContent = 'Sin datos';
+        masaVarNomEl.className = 'kpi-value text-secondary';
+        masaVarNomSub.textContent = ' - ';
+    } else {
+        const masaDiffSign = kpi.masa_salarial.diff_nom >= 0 ? '+' : '';
+        masaVarNomEl.textContent = masaDiffSign + formatMillions(Math.abs(kpi.masa_salarial.diff_nom));
+        masaVarNomEl.className = `kpi-value ${kpi.masa_salarial.diff_nom >= 0 ? 'text-success' : 'text-danger'}`;
+
+        masaVarNomSub.textContent = (kpi.masa_salarial.var_nom >= 0 ? '▲ ' : '▼ ') + formatPercentage(kpi.masa_salarial.var_nom).replace('+', '');
+    }
 
     // Var Real Masa
     const masaVarRealEl = document.getElementById('kpi-masa-var-real');
-    masaVarRealEl.textContent = formatPercentage(kpi.masa_salarial.var_real);
-    masaVarRealEl.className = `kpi-value ${kpi.masa_salarial.var_real >= 0 ? 'text-success' : 'text-danger'}`;
+
+    if (isIncomplete || isIpcMissing) {
+        masaVarRealEl.textContent = 'Sin datos';
+        masaVarRealEl.className = 'kpi-value text-secondary';
+    } else {
+        masaVarRealEl.textContent = formatPercentage(kpi.masa_salarial.var_real);
+        masaVarRealEl.className = `kpi-value ${kpi.masa_salarial.var_real >= 0 ? 'text-success' : 'text-danger'}`;
+    }
 }
 
 let dailyChartInstance = null;
 
-function renderChart(dailyData, periodLabel) {
+function renderChart(dailyData, monthName, currentYear, prevYear) {
     const ctx = document.getElementById('dailyChart').getContext('2d');
 
     if (dailyChartInstance) {
         dailyChartInstance.destroy();
     }
-
-    // Extract month name from "Enero 2026" -> "Enero"
-    const monthName = periodLabel.split(' ')[0];
 
     // Gradient for 2026 (Green/Emerald)
     const gradient2026 = ctx.createLinearGradient(0, 0, 0, 400);
@@ -207,16 +233,16 @@ function renderChart(dailyData, periodLabel) {
             labels: dailyData.labels,
             datasets: [
                 {
-                    label: `${monthName} 2026`,
-                    data: dailyData.data_2026,
+                    label: `${monthName} ${currentYear}`,
+                    data: dailyData.data_curr,
                     backgroundColor: gradient2026,
                     borderRadius: 4,
                     borderSkipped: false,
                     order: 1
                 },
                 {
-                    label: `${monthName} 2025`,
-                    data: dailyData.data_2025_nom,
+                    label: `${monthName} ${prevYear}`,
+                    data: dailyData.data_prev_nom,
                     backgroundColor: '#94a3b8', // Slate Gray (consistent with other dashboards)
                     borderRadius: 4,
                     borderSkipped: false,
@@ -245,13 +271,11 @@ function renderChart(dailyData, periodLabel) {
                             }
                         },
                         afterBody: function (tooltipItems) {
-                            const val2026 = tooltipItems[0].raw || 0;
-                            const val2025 = tooltipItems[1] ? tooltipItems[1].raw : 0;
-                            // Checking index 0/1 is risky if order changes, finding by dataset label label is safer but dynamic now.
-                            // Simply calculating diff if both exist.
+                            const valCurr = tooltipItems[0].raw || 0;
+                            const valPrev = tooltipItems[1] ? tooltipItems[1].raw : 0;
 
-                            if (val2026 > 0 && val2025 > 0) {
-                                const diff = val2026 - val2025;
+                            if (valCurr > 0 && valPrev > 0) {
+                                const diff = valCurr - valPrev;
                                 const sign = diff > 0 ? '+' : '';
                                 return `\nVar. Nominal: ${sign}$${new Intl.NumberFormat('es-AR').format(Math.round(diff))} M`;
                             }
@@ -276,6 +300,7 @@ function renderChart(dailyData, periodLabel) {
         }
     });
 }
+
 // --- Navigation Toggle ---
 document.addEventListener('DOMContentLoaded', () => {
     const toggle = document.getElementById('nav-toggle');

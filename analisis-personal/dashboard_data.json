@@ -9,8 +9,9 @@
     "anio": 2026,
     "periodo_actual": "Enero 2026",
     "periodo_anterior": "Enero 2025",
-    "cbt_valor": 376248,
-    "cbt_ratio": 4.483121791258804
+    "cbt_valor": 352420.0,
+    "cbt_ratio": 4.786236898352938,
+    "is_incomplete": false
   },
   "charts": {
     "labels": [
