@@ -10,12 +10,12 @@
     /* Brand Colors */
     --brand-dark: #1B2839;
     /* Dark Teal - Header/Primary Backgrounds */
-    --brand-green: #22C55E;
+    --brand-green: #10b981;
     /* Brand Green - Primary Actions */
 
     /* Mapped Accents */
     --accent-primary: var(--brand-green);
-    --accent-secondary: #15803d;
+    --accent-secondary: #059669;
     /* Darker green for gradients */
 
     /* Decorative Accents */
@@ -23,8 +23,8 @@
     --accent-yellow: #FFC107;
     --accent-blue: #03A9F4;
 
-    --accent-success: #166534;
-    --accent-danger: #dc2626;
+    --accent-success: var(--brand-green);
+    --accent-danger: #af2f2f;
 
     --glass-border: rgba(0, 0, 0, 0.08);
     --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -73,6 +73,10 @@ h3 {
     color: var(--accent-success);
 }
 
+.text-danger {
+    color: var(--accent-danger);
+}
+
 /* Layout */
 header {
     background-color: var(--header-bg);
@@ -80,19 +84,133 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 2rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     position: sticky;
     top: 0;
     z-index: 1000;
+    flex-wrap: wrap;
 }
 
-/* Month Selector Center - Absolute positioning to ensure true center */
+/* Horizontal Navigation (Desktop) */
+.nav-horizontal {
+    display: none;
+    /* Hidden on mobile */
+    flex: 1;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+@media (min-width: 768px) {
+    .nav-horizontal {
+        display: flex;
+    }
+}
+
+.nav-link-horizontal {
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.nav-link-horizontal:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: white;
+}
+
+.nav-link-horizontal.active {
+    background: var(--accent-primary);
+    color: white;
+}
+
+/* Header Actions (Login button / User info) */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* Login Button */
+.btn-header-login {
+    display: none;
+    /* Hidden on mobile */
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.5rem;
+    background: linear-gradient(135deg, #34D399 0%, #10B981 100%);
+    color: #0F1419;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(52, 211, 153, 0.3);
+}
+
+@media (min-width: 768px) {
+    .btn-header-login {
+        display: flex;
+    }
+}
+
+.btn-header-login:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(52, 211, 153, 0.4);
+}
+
+.login-icon {
+    font-size: 1.1rem;
+}
+
+/* User Info Header (Desktop) */
+.nav-user-header {
+    display: none;
+    /* Hidden on mobile */
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+}
+
+@media (min-width: 768px) {
+    .nav-user-header {
+        display: flex;
+    }
+}
+
+.btn-logout-header {
+    background: rgba(239, 68, 68, 0.15);
+    color: #FCA5A5;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    padding: 0.4rem 1rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: var(--font-family);
+}
+
+.btn-logout-header:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #FEE2E2;
+    transform: translateY(-1px);
+}
+
+
+/* Month Selector - Positioned between navigation and user section */
 .month-selector-container {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 1001;
+    display: flex;
+    align-items: center;
+    margin-right: 1rem;
 }
 
 .period-select {
@@ -357,6 +475,13 @@ footer {
     z-index: 1010;
 }
 
+@media (min-width: 768px) {
+    .nav-toggle {
+        display: none;
+        /* Hidden on desktop */
+    }
+}
+
 .nav-toggle span {
     width: 100%;
     height: 3px;
@@ -378,12 +503,11 @@ footer {
     transform: translateY(-8.5px) rotate(-45deg);
 }
 
-.nav-menu {
+.nav-menu-mobile {
     position: absolute;
     top: calc(100% + 1rem);
-    right: 0;
+    right: 5%;
     background: #1e293b;
-    /* Slightly lighter than brand dark for separation */
     backdrop-filter: blur(12px);
     padding: 0.75rem;
     border-radius: 12px;
@@ -398,6 +522,13 @@ footer {
     animation: menuFadeIn 0.2s ease-out;
 }
 
+@media (min-width: 768px) {
+    .nav-menu-mobile {
+        display: none !important;
+        /* Force hide on desktop */
+    }
+}
+
 @keyframes menuFadeIn {
     from {
         opacity: 0;
@@ -410,7 +541,7 @@ footer {
     }
 }
 
-.nav-menu.show {
+.nav-menu-mobile.show {
     display: flex;
 }
 
@@ -434,7 +565,51 @@ footer {
 .nav-link.active {
     background: var(--accent-primary);
     color: white;
+}
 
+/* User Info and Logout Button in Mobile Menu */
+.nav-user-mobile {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    margin-top: 0.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.user-icon {
+    font-size: 1.25rem;
+}
+
+.user-name {
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 600;
+    flex: 1;
+}
+
+.btn-logout {
+    background: rgba(239, 68, 68, 0.15);
+    color: #FCA5A5;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: var(--font-family);
+}
+
+.btn-logout:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #FEE2E2;
+    transform: translateY(-1px);
+}
+
+.btn-logout:active {
+    transform: translateY(0);
 }
 
 /* Social Footer */

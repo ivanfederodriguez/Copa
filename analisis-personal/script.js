@@ -1,5 +1,26 @@
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Display current user info
+    const currentUser = Auth.getCurrentUser();
+    if (currentUser) {
+        const userNameEl = document.getElementById('userName');
+        if (userNameEl) {
+            userNameEl.textContent = currentUser.name;
+        }
+    }
+
+    // Logout handler
+    const btnLogout = document.getElementById('btnLogout');
+    if (btnLogout) {
+        btnLogout.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (confirm('¿Está seguro que desea cerrar sesión?')) {
+                Auth.logout();
+            }
+        });
+    }
+
     fetch('dashboard_data.json')
         .then(response => response.json())
         .then(data => {
@@ -52,7 +73,7 @@ function renderKPIs(kpi) {
     const realVarEl = document.getElementById('kpi-real-var');
     realVarEl.textContent = formatPercentage(kpi.var_real_ia);
     realVarEl.className = `kpi-value ${kpi.var_real_ia >= 0 ? 'text-success' : 'text-danger'}`;
-    document.getElementById('label-real-period').innerHTML = `Ajustado por IPC NEA (Estimado)<br>vs ${kpi.periodo_anterior}`;
+    document.getElementById('label-real-period').innerHTML = `Ajustado por IPC NEA<br>vs ${kpi.periodo_anterior}`;
 
     // Update Header Period
     document.getElementById('header-period').textContent = `Análisis de puestos de trabajo y masa salarial | ${kpi.periodo_actual}`;
@@ -60,7 +81,7 @@ function renderKPIs(kpi) {
     // --- Section 2: CBT ---
 
     // Update CBT Label with current date
-    const cbtLabel = document.querySelector('#kpi-cbt-val').previousElementSibling;
+    const cbtLabel = document.getElementById('cbt-label-dynamic');
     if (cbtLabel) cbtLabel.textContent = `Valor CBT (${kpi.periodo_actual})`;
 
     // kpi-cbt-val (Now a main value)
@@ -74,13 +95,14 @@ function renderKPIs(kpi) {
 
 function renderCharts(charts) {
     // Common Color Palette
-    const colorPrimary = '#22C55E'; // Brand Green
+    const colorPrimary = '#10b981'; // Unified Green
     const colorSecondary = '#64748b'; // Slate
-    const colorAccent = '#E91E63'; // Magenta for contrast (e.g. IPC)
-    const colorRipte = '#03A9F4'; // Blue for RIPTE
+    const colorAccent = '#af2f2f'; // Muted Red
+    const colorRipte = '#0277BD'; // Intense Blue for RIPTE
 
     // Chart 1: Avg Salary vs RIPTE
     const ctx1 = document.getElementById('chartAvgVsRipte').getContext('2d');
+
     new Chart(ctx1, {
         type: 'line',
         data: {
@@ -90,10 +112,15 @@ function renderCharts(charts) {
                     label: 'Salario Promedio Provincial',
                     data: charts.salario_promedio,
                     borderColor: colorPrimary,
-                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                    backgroundColor: 'transparent',
                     borderWidth: 3,
+                    pointBackgroundColor: colorPrimary,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
                     tension: 0.3,
-                    fill: true,
+                    fill: false,
                     yAxisID: 'y'
                 },
                 {
@@ -103,9 +130,10 @@ function renderCharts(charts) {
                     backgroundColor: 'transparent',
                     borderWidth: 2,
                     borderDash: [5, 5],
-                    pointRadius: 4,
+                    pointRadius: 3,
                     tension: 0.3,
-                    yAxisID: 'y' // Assuming comparable magnitudes
+                    yAxisID: 'y',
+                    spanGaps: true
                 }
             ]
         },
@@ -113,17 +141,30 @@ function renderCharts(charts) {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20,
+                        font: { size: 12, weight: '600' }
+                    }
+                },
                 tooltip: {
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    titleColor: '#1e293b',
+                    bodyColor: '#475569',
+                    borderColor: 'rgba(0,0,0,0.1)',
+                    borderWidth: 1,
+                    padding: 12,
+                    displayColors: true,
                     mode: 'index',
                     intersect: false,
                     callbacks: {
                         label: function (context) {
                             let label = context.dataset.label || '';
-                            if (label) {
-                                label += ': ';
-                            }
+                            if (label) label += ': ';
                             if (context.parsed.y !== null) {
-                                label += new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(context.parsed.y);
+                                label += new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(context.parsed.y);
                             }
                             return label;
                         }
@@ -137,13 +178,15 @@ function renderCharts(charts) {
             },
             scales: {
                 y: {
-                    grid: { color: 'rgba(0,0,0,0.05)' },
+                    grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false },
                     ticks: {
+                        font: { size: 11 },
                         callback: (value) => new Intl.NumberFormat('es-AR', { notation: "compact", style: 'currency', currency: 'ARS' }).format(value).replace('.0', '')
                     }
                 },
                 x: {
-                    grid: { display: false }
+                    grid: { display: false },
+                    ticks: { font: { size: 11 } }
                 }
             }
         }
@@ -155,7 +198,7 @@ function renderCharts(charts) {
 // --- Navigation Toggle ---
 document.addEventListener('DOMContentLoaded', () => {
     const toggle = document.getElementById('nav-toggle');
-    const menu = document.getElementById('nav-menu');
+    const menu = document.getElementById('navMenuMobile');
 
     if (toggle && menu) {
         toggle.addEventListener('click', (e) => {

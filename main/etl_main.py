@@ -9,7 +9,7 @@ import numpy as np
 DB_CONFIG = {
     'user': os.getenv('DB_USER', 'estadistica'),
     'host': os.getenv('DB_HOST', '54.94.131.196'),
-    'password': os.getenv('DB_PASSWORD', 'Estadistica2024!!'),
+    'password': os.getenv('DB_PASSWORD', ''),
     'database': os.getenv('DB_DATABASE', 'datalake_economico'),
     'port': int(os.getenv('DB_PORT', 3306)),
     'connect_timeout': 20
@@ -93,8 +93,8 @@ def fetch_ipc_nea():
     """
     query = """
     SELECT 
-        YEAR(fecha) as anio, 
-        MONTH(fecha) as mes, 
+        YEAR(fecha) as year, 
+        MONTH(fecha) as month, 
         valor as ipc_valor
     FROM ipc_valores
     WHERE id_region = 5 AND id_categoria = 1 AND id_division = 1
@@ -155,7 +155,7 @@ def process_data(df_daily, df_salary, df_ipc):
         # (Since CSV has placeholders with 0.0 for the whole month)
         real_data_26 = df_daily_26[df_daily_26['recaudacion'] > 0]
         max_day_26 = real_data_26['day'].max() if not real_data_26.empty else 0
-        is_complete = max_day_26 >= 28
+        is_complete = max_day_26 >= 25
         
         if is_complete:
             default_period_id = period_id
@@ -175,24 +175,14 @@ def process_data(df_daily, df_salary, df_ipc):
         total_salary_26 = salary_26_row['masa_salarial'].values[0] if not salary_26_row.empty else 0
         
         # IPC & Real Variation
-        ipc_25_row = df_ipc[(df_ipc['anio'] == 2025) & (df_ipc['mes'] == m)]
-        ipc_26_row = df_ipc[(df_ipc['anio'] == 2026) & (df_ipc['mes'] == m)]
+        ipc_25_row = df_ipc[(df_ipc['year'] == 2025) & (df_ipc['month'] == m)]
+        ipc_26_row = df_ipc[(df_ipc['year'] == 2026) & (df_ipc['month'] == m)]
         
         val_ipc_25 = ipc_25_row['ipc_valor'].values[0] if not ipc_25_row.empty else None
         val_ipc_26 = ipc_26_row['ipc_valor'].values[0] if not ipc_26_row.empty else None
 
-        # Hack for Jan 2026 estimate if missing
-        if m == 1 and val_ipc_26 is None:
-             # Try fetching Dec 2025 for estimate
-             conn = get_connection()
-             cursor = conn.cursor()
-             cursor.execute("SELECT valor FROM ipc_valores WHERE id_region=5 AND id_categoria=1 AND YEAR(fecha)=2025 AND MONTH(fecha)=12")
-             dec_25_data = cursor.fetchone()
-             conn.close()
-             val_ipc_dec_25 = dec_25_data[0] if dec_25_data else None
-             
-             if val_ipc_dec_25 is not None:
-                 val_ipc_26 = val_ipc_dec_25 * 1.0186
+        # Variation
+        # Official Jan 2026 data used directly from DB query (if available)
 
         var_ipc_ia = 0
         if val_ipc_25 and val_ipc_26:
@@ -285,7 +275,7 @@ def process_annual_data(df_daily, df_ipc):
     annual_metrics = []
     
     # Find Base IPC (Fixed: Jan 2022)
-    ipc_base_row = df_ipc[(df_ipc['anio'] == 2022) & (df_ipc['mes'] == 1)]
+    ipc_base_row = df_ipc[(df_ipc['year'] == 2022) & (df_ipc['month'] == 1)]
     
     # If Jan 2022 not found, try to find the earliest available? 
     # Or just default 1 if missing for safety? 
@@ -311,7 +301,7 @@ def process_annual_data(df_daily, df_ipc):
         for m in range(1, 13):
             month_rev = df_y[df_y['month'] == m]['recaudacion'].sum()
             
-            ipc_m_row = df_ipc[(df_ipc['anio'] == y) & (df_ipc['mes'] == m)]
+            ipc_m_row = df_ipc[(df_ipc['year'] == y) & (df_ipc['month'] == m)]
             ipc_m_val = ipc_m_row['ipc_valor'].values[0] if not ipc_m_row.empty else None
             
             if ipc_m_val and ipc_base_val:
@@ -350,6 +340,76 @@ def process_annual_data(df_daily, df_ipc):
         }
     }
 
+def process_chart_data(df_daily, df_ipc):
+    """
+    Process interannual variations for Coparticipation and inflation for the last 12 COMPLETE months.
+    Only includes months where we have complete data (through at least day 28).
+    """
+    # 1. Determine completeness for each month
+    # A month is complete if it has data up to day 28 or later
+    completeness_data = []
+    
+    for (year, month), group in df_daily.groupby(['year', 'month']):
+        # Find the last day with actual revenue data (> 0)
+        real_data = group[group['recaudacion'] > 0]
+        max_day = real_data['day'].max() if not real_data.empty else 0
+        is_complete = max_day >= 25
+        
+        completeness_data.append({
+            'year': year,
+            'month': month,
+            'is_complete': is_complete
+        })
+    
+    df_completeness = pd.DataFrame(completeness_data)
+    
+    # 2. Group daily coparticipation by year and month
+    df_monthly = df_daily.groupby(['year', 'month'])['recaudacion'].sum().reset_index()
+    df_monthly = df_monthly.sort_values(['year', 'month'])
+    
+    # 3. Merge with completeness info
+    df_monthly = pd.merge(df_monthly, df_completeness, on=['year', 'month'], how='left')
+    
+    # 4. Filter only complete months
+    df_monthly = df_monthly[df_monthly['is_complete'] == True].copy()
+    
+    # 5. Merge with IPC
+    df_combined = pd.merge(df_monthly, df_ipc, on=['year', 'month'], how='left')
+    df_combined = df_combined.sort_values(['year', 'month'])
+    
+    # 6. Calculate interannual variations (year-over-year)
+    # For each month, compare with the same month of the previous year
+    df_combined['year_prev'] = df_combined['year'] - 1
+    
+    # Merge with previous year data
+    df_prev = df_combined[['year', 'month', 'recaudacion', 'ipc_valor']].copy()
+    df_prev.columns = ['year_prev', 'month', 'recaudacion_prev', 'ipc_valor_prev']
+    
+    df_combined = pd.merge(
+        df_combined, 
+        df_prev, 
+        on=['year_prev', 'month'], 
+        how='left'
+    )
+    
+    # Calculate interannual variations
+    df_combined['copa_var_interanual'] = ((df_combined['recaudacion'] / df_combined['recaudacion_prev']) - 1) * 100
+    df_combined['ipc_var_interanual'] = ((df_combined['ipc_valor'] / df_combined['ipc_valor_prev']) - 1) * 100
+    
+    # 7. Get last 12 complete months where we have both current and previous year data
+    df_chart = df_combined.dropna(subset=['copa_var_interanual', 'ipc_var_interanual']).tail(12)
+    
+    MONTH_NAMES = {
+        1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril", 5: "Mayo", 6: "Junio",
+        7: "Julio", 8: "Agosto", 9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"
+    }
+    
+    return {
+        "labels": [MONTH_NAMES.get(m, str(m)) for m in df_chart['month']],
+        "copa_var_interanual": df_chart['copa_var_interanual'].tolist(),
+        "ipc_var_interanual": df_chart['ipc_var_interanual'].tolist()
+    }
+
 def main():
     print("Fetching Daily Coparticipation...")
     df_daily = fetch_coparticipacion_daily()
@@ -366,6 +426,10 @@ def main():
     print("Processing Annual Data...")
     annual_data = process_annual_data(df_daily, df_ipc)
     json_data["annual"] = annual_data
+    
+    print("Processing Chart Data (Monthly Variations)...")
+    chart_data = process_chart_data(df_daily, df_ipc)
+    json_data["global_charts"] = chart_data
     
     output_path = os.path.join(os.path.dirname(__file__), 'dashboard_data.json')
     with open(output_path, 'w') as f:

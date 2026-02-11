@@ -2,7 +2,28 @@
 let dashboardData = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-    fetch('dashboard_data.json')
+    // Display current user info
+    const currentUser = Auth.getCurrentUser();
+    if (currentUser) {
+        const userNameEl = document.getElementById('userName');
+        if (userNameEl) {
+            userNameEl.textContent = currentUser.name;
+        }
+    }
+
+    // Logout handler
+    const btnLogout = document.getElementById('btnLogout');
+    if (btnLogout) {
+        btnLogout.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (confirm('¿Está seguro que desea cerrar sesión?')) {
+                Auth.logout();
+            }
+        });
+    }
+
+    fetch('../main/dashboard_data.json')
         .then(response => response.json())
         .then(data => {
             dashboardData = data;
@@ -196,7 +217,7 @@ function renderChart(dailyData, periodLabel) {
                 {
                     label: `${monthName} 2025`,
                     data: dailyData.data_2025_nom,
-                    backgroundColor: '#94a3b8',
+                    backgroundColor: '#94a3b8', // Slate Gray (consistent with other dashboards)
                     borderRadius: 4,
                     borderSkipped: false,
                     order: 2
@@ -220,7 +241,7 @@ function renderChart(dailyData, periodLabel) {
                         label: function (context) {
                             let label = context.dataset.label || '';
                             if (context.parsed.y !== null) {
-                                return `${label}: $${new Intl.NumberFormat('es-AR').format(context.parsed.y.toFixed(0))} M`;
+                                return `${label}: $${new Intl.NumberFormat('es-AR').format(Math.round(context.parsed.y))} M`;
                             }
                         },
                         afterBody: function (tooltipItems) {
@@ -232,7 +253,7 @@ function renderChart(dailyData, periodLabel) {
                             if (val2026 > 0 && val2025 > 0) {
                                 const diff = val2026 - val2025;
                                 const sign = diff > 0 ? '+' : '';
-                                return `\nVar. Nominal: ${sign}$${new Intl.NumberFormat('es-AR').format(diff.toFixed(0))} M`;
+                                return `\nVar. Nominal: ${sign}$${new Intl.NumberFormat('es-AR').format(Math.round(diff))} M`;
                             }
                         }
                     }
@@ -247,7 +268,7 @@ function renderChart(dailyData, periodLabel) {
                     grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false },
                     ticks: {
                         color: '#64748b',
-                        callback: val => '$' + val.toFixed(0) + ' M'
+                        callback: val => '$' + new Intl.NumberFormat('es-AR').format(Math.round(val)) + ' M'
                     }
                 }
             },
@@ -258,7 +279,7 @@ function renderChart(dailyData, periodLabel) {
 // --- Navigation Toggle ---
 document.addEventListener('DOMContentLoaded', () => {
     const toggle = document.getElementById('nav-toggle');
-    const menu = document.getElementById('nav-menu');
+    const menu = document.getElementById('navMenuMobile');
 
     if (toggle && menu) {
         toggle.addEventListener('click', (e) => {

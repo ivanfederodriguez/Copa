@@ -14,6 +14,12 @@
   <link rel="stylesheet" href="../main/annual_styles.css">
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Authentication -->
+  <script src="../auth/auth.js"></script>
+  <script>
+    // Require authentication before loading the page
+    Auth.requireAuth();
+  </script>
 </head>
 
 <body>
@@ -25,18 +31,49 @@
       </a>
     </div>
 
-    <div class="nav-container">
+    <!-- Horizontal Navigation for Desktop -->
+    <nav class="nav-horizontal" id="navHorizontal">
+      <a href="../main/index.html" class="nav-link-horizontal">Inicio</a>
+      <a href="../monitor-mensual/index.html" class="nav-link-horizontal">Monitor Mensual</a>
+      <a href="../analisis-anual/index.html" class="nav-link-horizontal active">Análisis Anual</a>
+      <a href="../analisis-personal/index.html" class="nav-link-horizontal">Análisis Salarial</a>
+    </nav>
+
+    <!-- User section / Login button -->
+    <div class="header-actions">
+      <!-- User info (visible when authenticated) -->
+      <div class="nav-user-header" id="navUserHeader">
+        <span class="user-icon">👤</span>
+        <span class="user-name" id="userName">Usuario</span>
+        <button class="btn-logout-header" id="btnLogout" title="Cerrar sesión">
+          Salir
+        </button>
+      </div>
+
+      <!-- Mobile menu toggle -->
       <button class="nav-toggle" id="nav-toggle" aria-label="Abrir menú">
         <span></span>
         <span></span>
         <span></span>
       </button>
-      <nav class="nav-menu" id="nav-menu">
-        <a href="../main/index.html" class="nav-link">Monitor Mensual</a>
-        <a href="../analisis-anual/index.html" class="nav-link active">Análisis Anual</a>
-        <a href="../analisis-personal/index.html" class="nav-link">Análisis Salarial</a>
-      </nav>
     </div>
+
+    <!-- Mobile dropdown menu -->
+    <nav class="nav-menu-mobile" id="navMenuMobile">
+      <a href="../main/index.html" class="nav-link">Inicio</a>
+      <a href="../monitor-mensual/index.html" class="nav-link">Monitor Mensual</a>
+      <a href="../analisis-anual/index.html" class="nav-link active">Análisis Anual</a>
+      <a href="../analisis-personal/index.html" class="nav-link">Análisis Salarial</a>
+
+      <!-- User section in mobile menu -->
+      <div class="nav-user-mobile" id="navUserMobile">
+        <span class="user-icon">👤</span>
+        <span class="user-name" id="userNameMobile">Usuario</span>
+        <button class="btn-logout" id="btnLogoutMobile" title="Cerrar sesión">
+          Salir
+        </button>
+      </div>
+    </nav>
   </header>
 
   <main>

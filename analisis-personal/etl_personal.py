@@ -9,7 +9,7 @@ from mysql.connector import Error
 DB_CONFIG = {
     'user': os.getenv('DB_USER', 'estadistica'),
     'host': os.getenv('DB_HOST', '54.94.131.196'),
-    'password': os.getenv('DB_PASSWORD', 'Estadistica2024!!'),
+    'password': os.getenv('DB_PASSWORD', ''),
     'database': os.getenv('DB_DATABASE', 'datalake_economico'),
     'port': int(os.getenv('DB_PORT', 3306)),
     'connect_timeout': 20  # Increased timeout
@@ -105,26 +105,31 @@ def process_data(df_personnel, df_ipc_nea, df_ripte):
     df_personnel['total_gral'] = pd.to_numeric(df_personnel['total_gral'], errors='coerce').fillna(0)
     df_personnel['importe_gral'] = pd.to_numeric(df_personnel['importe_gral'], errors='coerce').fillna(0)
     
-    # Filter out SAC (Sueldo Anual Complementario) references
-    # User requested to remove all references to SAC, S.A.C, sac, s.a.c
-    sac_terms = r'SAC|S\.A\.C|Aguinaldo|Sueldo Anual Complementario'
-    df_personnel = df_personnel[~df_personnel['liquidacion'].str.contains(sac_terms, case=False, na=False)].copy()
+    # 1. Total Wage Bill: Sum EVERYTHING (including SAC) as requested by user
+    # "When we talk about wage mass, we must include everything that is paid"
+    masa_salarial_total = df_personnel.groupby(['anio', 'mes'])['importe_gral'].sum().reset_index()
+    masa_salarial_total.rename(columns={'importe_gral': 'masa_salarial'}, inplace=True)
+
+    # 2. Filter out SAC for Average Salary calculation
+    # "For average salary analysis, we should NOT include SAC, sac, S.A.C or s.a.c."
+    sac_terms = r'SAC|S\.A\.C|sac|s\.a\.c'
+    df_no_sac = df_personnel[~df_personnel['liquidacion'].str.contains(sac_terms, case=False, na=False)].copy()
     
-    # Employee Count: specific filter
-    df_empleados = df_personnel[df_personnel['liquidacion'].str.contains('sueldo', case=False, na=False)].copy()
+    # 3. Employee Count: from sueldo rows (excluding SAC)
+    df_empleados = df_no_sac[df_no_sac['liquidacion'].str.contains('sueldo', case=False, na=False)].copy()
     empleados_grouped = df_empleados.groupby(['anio', 'mes'])['total_gral'].sum().reset_index()
     empleados_grouped.rename(columns={'total_gral': 'cantidad_empleados'}, inplace=True)
     
-    # Wage Bill: Sum everything grouped by month (Aggregated for dashboard)
-    # Note: User asked for "Masa salarial total (teniendo en cuenta todos los conceptos)" 
-    # and "Empleo total (sin duplicaciones)".
-    # Grouping by month across all jurisdictions for the dashboard global View
-    salario_grouped = df_personnel.groupby(['anio', 'mes'])['importe_gral'].sum().reset_index()
-    salario_grouped.rename(columns={'importe_gral': 'masa_salarial'}, inplace=True)
+    # 4. Wage amount for Average Salary: exclude SAC
+    masa_sin_sac = df_no_sac.groupby(['anio', 'mes'])['importe_gral'].sum().reset_index()
+    masa_sin_sac.rename(columns={'importe_gral': 'masa_sin_sac'}, inplace=True)
     
     # Merge Measures
-    df_dashboard = pd.merge(empleados_grouped, salario_grouped, on=['anio', 'mes'], how='outer')
-    df_dashboard['salario_promedio'] = df_dashboard['masa_salarial'] / df_dashboard['cantidad_empleados']
+    df_dashboard = pd.merge(empleados_grouped, masa_salarial_total, on=['anio', 'mes'], how='outer')
+    df_dashboard = pd.merge(df_dashboard, masa_sin_sac, on=['anio', 'mes'], how='outer')
+    
+    # Calculate Average Salary using masa_sin_sac (without SAC)
+    df_dashboard['salario_promedio'] = df_dashboard['masa_sin_sac'] / df_dashboard['cantidad_empleados']
     
     # Merge External Data
     df_dashboard = pd.merge(df_dashboard, df_ipc_nea, on=['anio', 'mes'], how='left')
@@ -150,20 +155,8 @@ def process_data(df_personnel, df_ipc_nea, df_ripte):
     # 1. Monthly Variations
     df_dashboard['salario_var_mensual'] = df_dashboard['salario_promedio'].pct_change()
     
-    # --- ESTIMATE JAN 2026 IPC ---
-    # User requested: IPC estimate 1.86% for Jan 2026
-    idx_jan_26 = df_dashboard[(df_dashboard['anio'] == 2026) & (df_dashboard['mes'] == 1)].index
-    idx_dec_25 = df_dashboard[(df_dashboard['anio'] == 2025) & (df_dashboard['mes'] == 12)].index
-    
-    if not idx_jan_26.empty:
-         # 1. Fill monthly variation
-         df_dashboard.loc[idx_jan_26, 'ipc_var_mensual_nea'] = df_dashboard.loc[idx_jan_26, 'ipc_var_mensual_nea'].fillna(0.0186)
-         
-         # 2. Fill IPC index value: index_dec_25 * 1.0186
-         if not idx_dec_25.empty:
-             val_dec_25 = df_dashboard.loc[idx_dec_25, 'ipc_valor_nea'].values[0]
-             if pd.notna(val_dec_25):
-                 df_dashboard.loc[idx_jan_26, 'ipc_valor_nea'] = df_dashboard.loc[idx_jan_26, 'ipc_valor_nea'].fillna(val_dec_25 * 1.0186)
+    # --- JAN 2026 IPC ---
+    # Using official data from DB as requested by user.
 
     # 2. Interannual Variations
     df_dashboard['salario_promedio_lag12'] = df_dashboard['salario_promedio'].shift(12)

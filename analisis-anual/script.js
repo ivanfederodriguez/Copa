@@ -2,7 +2,32 @@
 let dashboardData = {};
 let annualChart = null;
 
+const formatterDecimal = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const formatterInteger = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 });
+const formatterOneDecimal = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
 document.addEventListener('DOMContentLoaded', () => {
+    // Display current user info
+    const currentUser = Auth.getCurrentUser();
+    if (currentUser) {
+        const userNameEl = document.getElementById('userName');
+        if (userNameEl) {
+            userNameEl.textContent = currentUser.name;
+        }
+    }
+
+    // Logout handler
+    const btnLogout = document.getElementById('btnLogout');
+    if (btnLogout) {
+        btnLogout.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (confirm('¿Está seguro que desea cerrar sesión?')) {
+                Auth.logout();
+            }
+        });
+    }
+
     // Fetch data from MAIN dashboard JSON which contains the 'annual' node
     fetch('../main/dashboard_data.json')
         .then(response => response.json())
@@ -38,32 +63,30 @@ function renderAnnualDashboard() {
     const annualData = dashboardData.annual;
     const periods = annualData.periods; // Array of {year, nominal, real}
 
-    // Sort just in case
+    // Sorting
     periods.sort((a, b) => b.year - a.year);
 
-    // Most recent complete year (e.g. 2025)
     const currentYear = periods[0];
-    const prevYear = periods[1]; // 2024
+    const prevYear = periods[1];
 
-    // const kpiGrid = document.getElementById('annual-kpi-grid');
     const kpiGrid = document.getElementById('annual-kpi-grid');
     if (!kpiGrid) return;
 
     // Formatting helpers
     const formatCurrency = (val) => {
         if (Math.abs(val) >= 1_000_000_000_000) {
-            return `$${(val / 1_000_000_000_000).toFixed(2)} Billones`;
+            return `$${formatterDecimal.format(val / 1_000_000_000_000)} Billones`;
         }
         if (Math.abs(val) >= 1_000_000_000) {
-            return `$${(val / 1_000_000_000).toFixed(0)} Mil Millones`;
+            return `$${formatterInteger.format(val / 1_000_000_000)} Mil Millones`;
         }
-        return `$${(val / 1_000_000).toFixed(0)} M`;
+        return `$${formatterInteger.format(val / 1_000_000)} M`;
     };
 
     const formatPct = (val) => {
         if (val === null || val === undefined) return '-';
         const sign = val >= 0 ? '+' : '';
-        return `${sign}${val.toFixed(0)}%`;
+        return `${sign}${formatterDecimal.format(val)}%`;
     };
 
     // 1. Current Year Card
@@ -218,8 +241,8 @@ function renderMixedChart(periods, baseLabel) {
                         label: function (ctx) {
                             let val = ctx.raw;
                             let label = '';
-                            if (val >= 1_000_000_000_000) label = `$${(val / 1e12).toFixed(2)} Billones`;
-                            else label = `$${(val / 1e9).toFixed(0)} Mil M`;
+                            if (val >= 1_000_000_000_000) label = `$${formatterDecimal.format(val / 1e12)} Billones`;
+                            else label = `$${formatterInteger.format(val / 1e9)} Mil M`;
                             return `${ctx.dataset.label}: ${label}`;
                         }
                     }
@@ -229,7 +252,7 @@ function renderMixedChart(periods, baseLabel) {
                 y: {
                     border: { display: false },
                     grid: { color: 'rgba(0,0,0,0.05)' },
-                    ticks: { color: '#64748b', font: { weight: '500' }, callback: (val) => (val / 1e12).toFixed(1) + 'B' },
+                    ticks: { color: '#64748b', font: { weight: '500' }, callback: (val) => formatterOneDecimal.format(val / 1e12) + 'B' },
                 },
                 x: {
                     grid: { display: false },
@@ -278,8 +301,8 @@ function renderNominalChart(periods) {
                     callbacks: {
                         label: function (ctx) {
                             let val = ctx.raw;
-                            if (val >= 1_000_000_000_000) return `$${(val / 1e12).toFixed(2)} Billones`;
-                            return `$${(val / 1e9).toFixed(0)} Mil M`;
+                            if (val >= 1_000_000_000_000) return `$${formatterDecimal.format(val / 1e12)} Billones`;
+                            return `$${formatterInteger.format(val / 1e9)} Mil M`;
                         }
                     }
                 }
@@ -299,8 +322,8 @@ function renderRealChart(periods, baseLabel) {
     const data = chronological.map(p => p.real);
 
     const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-    gradient.addColorStop(0, 'rgba(16, 185, 129, 0.9)');
-    gradient.addColorStop(1, 'rgba(16, 185, 129, 0.4)');
+    gradient.addColorStop(0, 'rgba(148, 163, 184, 0.9)');
+    gradient.addColorStop(1, 'rgba(148, 163, 184, 0.4)');
 
     if (realChartInstance) realChartInstance.destroy();
 
@@ -329,8 +352,8 @@ function renderRealChart(periods, baseLabel) {
                     callbacks: {
                         label: function (ctx) {
                             let val = ctx.raw;
-                            if (val >= 1_000_000_000_000) return `$${(val / 1e12).toFixed(2)} Billones`;
-                            return `$${(val / 1e9).toFixed(0)} Mil M`;
+                            if (val >= 1_000_000_000_000) return `$${formatterDecimal.format(val / 1e12)} Billones`;
+                            return `$${formatterInteger.format(val / 1e9)} Mil M`;
                         }
                     }
                 }

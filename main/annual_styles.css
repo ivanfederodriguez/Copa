@@ -110,7 +110,7 @@
 }
 
 .var-neg {
-    color: #ef4444;
+    color: var(--accent-danger);
 }
 
 .var-neu {

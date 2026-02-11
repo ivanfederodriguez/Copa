@@ -13,6 +13,12 @@
     <link rel="stylesheet" href="../main/styles.css">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Authentication -->
+    <script src="../auth/auth.js"></script>
+    <script>
+        // Require authentication before loading the page
+        Auth.requireAuth();
+    </script>
 </head>
 
 <body>
@@ -23,98 +29,117 @@
                 <img src="../main/logo-blanco.png" alt="IPECD" class="logo-img">
             </a>
         </div>
-        <div class="nav-container">
+
+        <!-- Horizontal Navigation for Desktop -->
+        <nav class="nav-horizontal" id="navHorizontal">
+            <a href="../main/index.html" class="nav-link-horizontal">Inicio</a>
+            <a href="../monitor-mensual/index.html" class="nav-link-horizontal">Monitor Mensual</a>
+            <a href="../analisis-anual/index.html" class="nav-link-horizontal">Análisis Anual</a>
+            <a href="../analisis-personal/index.html" class="nav-link-horizontal active">Análisis Salarial</a>
+        </nav>
+
+        <!-- User section / Login button -->
+        <div class="header-actions">
+            <!-- User info (visible when authenticated) -->
+            <div class="nav-user-header" id="navUserHeader">
+                <span class="user-icon">👤</span>
+                <span class="user-name" id="userName">Usuario</span>
+                <button class="btn-logout-header" id="btnLogout" title="Cerrar sesión">
+                    Salir
+                </button>
+            </div>
+
+            <!-- Mobile menu toggle -->
             <button class="nav-toggle" id="nav-toggle" aria-label="Abrir menú">
                 <span></span>
                 <span></span>
                 <span></span>
             </button>
-            <nav class="nav-menu" id="nav-menu">
-                <a href="../main/index.html" class="nav-link">Monitor Mensual</a>
-                <a href="../analisis-anual/index.html" class="nav-link">Análisis Anual</a>
-                <a href="index.html" class="nav-link active">Análisis Salarial</a>
-            </nav>
         </div>
+
+        <!-- Mobile dropdown menu -->
+        <nav class="nav-menu-mobile" id="navMenuMobile">
+            <a href="../main/index.html" class="nav-link">Inicio</a>
+            <a href="../monitor-mensual/index.html" class="nav-link">Monitor Mensual</a>
+            <a href="../analisis-anual/index.html" class="nav-link">Análisis Anual</a>
+            <a href="../analisis-personal/index.html" class="nav-link active">Análisis Salarial</a>
+
+            <!-- User section in mobile menu -->
+            <div class="nav-user-mobile" id="navUserMobile">
+                <span class="user-icon">👤</span>
+                <span class="user-name" id="userNameMobile">Usuario</span>
+                <button class="btn-logout" id="btnLogoutMobile" title="Cerrar sesión">
+                    Salir
+                </button>
+            </div>
+        </nav>
     </header>
 
     <main>
-        <div class="header-content" style="text-align: center; margin-bottom: 3rem;">
-            <h1 style="font-size: 3rem; margin-bottom: 1rem;" class="text-gradient">Análisis de Empleo Público
-                Provincial</h1>
-            <p style="color: var(--text-secondary); font-size: 1.1rem; max-width: 600px; margin: 0 auto;"
-                id="header-period">
-                Análisis de puestos de trabajo y masa salarial de la Provincia.
+        <div class="header-content" style="text-align: center; margin-bottom: 4rem;">
+            <h1 class="text-gradient" id="page-title" style="font-size: 3.5rem; margin-bottom: 1rem;">Análisis de Empleo
+                Público</h1>
+            <p id="header-period" style="color: var(--text-secondary); font-size: 1.2rem; font-weight: 500;">
+                Seguimiento de salarios, puestos de trabajo y poder adquisitivo.
             </p>
         </div>
 
-        <!-- KPI Grid -->
-        <!-- Section 1: Salarios y Empleo -->
-        <h2 style="font-size: 1.5rem; margin-bottom: 1rem; margin-top: 2rem;">Salarios y Empleo</h2>
-        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.5rem;">
-            Fuente: Cálculo en base a datos de SISPER e INDEC
-        </p>
-        <section class="hero-grid">
-            <article class="kpi-card">
-                <div class="kpi-label">Salario Promedio</div>
-                <div class="kpi-value" id="kpi-avg-salary">Loading...</div>
-                <div class="kpi-sub">
-                    <span id="kpi-employees" style="color: var(--text-secondary);">Empleados: ...</span>
-                </div>
-            </article>
+        <section class="dashboard-section">
+            <h2 class="section-title">Salarios y Empleo</h2>
+            <p class="section-subtitle" style="margin-bottom: 2rem;">Fuente: Cálculo en base a datos de SISPER e INDEC
+            </p>
 
-            <article class="kpi-card">
-                <div class="kpi-label">Masa Salarial (Millones)</div>
-                <div class="kpi-value" id="kpi-total-wage">Loading...</div>
-                <div class="kpi-sub" style="color: var(--text-secondary);">
-                    <span>Total Liquidado</span>
-                </div>
-            </article>
+            <div class="hero-grid">
+                <article class="kpi-card">
+                    <div class="kpi-label">Salario Promedio</div>
+                    <div class="kpi-value" id="kpi-avg-salary">...</div>
+                    <div class="kpi-sub" id="kpi-employees">Cargando datos...</div>
+                </article>
 
-            <article class="kpi-card">
-                <div class="kpi-label">Variación Nominal (i.a.)</div>
-                <div class="kpi-value" id="kpi-nom-var">--%</div>
-                <div class="kpi-sub">
-                    <span style="color: var(--text-secondary);" id="label-nom-period">vs Año Anterior</span>
-                </div>
-            </article>
+                <article class="kpi-card">
+                    <div class="kpi-label">Masa Salarial</div>
+                    <div class="kpi-value" id="kpi-total-wage">...</div>
+                    <div class="kpi-sub">Total mensual liquidado</div>
+                </article>
 
-            <article class="kpi-card">
-                <div class="kpi-label">Variación Real (i.a.)</div>
-                <div class="kpi-value" id="kpi-real-var">--%</div>
-                <div class="kpi-sub">
-                    <span style="color: var(--text-secondary);" id="label-real-period">Ajustado por IPC NEA
-                        (Estimado)</span>
-                </div>
-            </article>
+                <article class="kpi-card">
+                    <div class="kpi-label">Variación Nominal</div>
+                    <div class="kpi-value" id="kpi-nom-var">--%</div>
+                    <div class="kpi-sub" id="label-nom-period">Interanual</div>
+                </article>
+
+                <article class="kpi-card">
+                    <div class="kpi-label">Variación Real</div>
+                    <div class="kpi-value" id="kpi-real-var">--%</div>
+                    <span style="color: var(--text-secondary);" id="label-real-period">Ajustado por IPC NEA</span>
+                </article>
+            </div>
         </section>
 
-        <!-- Section 2: Contexto Social -->
-        <h2 style="font-size: 1.5rem; margin-bottom: 1rem; margin-top: 3rem;">Relación entre salario promedio y Canasta
-            Básica Total (Adulto Equivalente)</h2>
-        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.5rem;">
-            La Canasta Básica Total para un adulto equivalente es calculada por el IPECD.
-        </p>
+        <section class="dashboard-section" style="margin-top: 4rem;">
+            <h2 class="section-title">Relación Salario vs Canasta Básica</h2>
+            <p class="section-subtitle" style="margin-bottom: 2rem;">Comparativa con la Canasta Básica Total (CBT) por
+                adulto equivalente calculada por el IPECD.</p>
 
-        <section class="hero-grid" style="grid-template-columns: repeat(2, 1fr); max-width: 800px;">
-            <article class="kpi-card">
-                <div class="kpi-label">Valor CBT (Enero 2026)</div>
-                <div class="kpi-value" id="kpi-cbt-val">$...</div>
-                <div class="kpi-sub">
-                    <span style="color: var(--text-secondary);">Línea de Pobreza</span>
-                </div>
-            </article>
+            <div class="hero-grid" style="grid-template-columns: repeat(2, 1fr); max-width: 900px; margin-bottom: 0;">
+                <article class="kpi-card">
+                    <div class="kpi-label" id="cbt-label-dynamic">Valor CBT</div>
+                    <div class="kpi-value" id="kpi-cbt-val">$...</div>
+                    <div class="kpi-sub">Línea de Pobreza Individual</div>
+                </article>
 
-            <article class="kpi-card">
-                <div class="kpi-label">Cant. Canastas Básicas</div>
-                <div class="kpi-value" id="kpi-cbt-ratio">--</div>
-                <div class="kpi-sub">
-                    <span>CBTs por Salario</span>
-                </div>
-            </article>
+                <article class="kpi-card">
+                    <div class="kpi-label">Poder de Compra</div>
+                    <div class="kpi-value" id="kpi-cbt-ratio">--</div>
+                    <div class="kpi-sub">Canastas Básicas por Salario</div>
+                </article>
+            </div>
         </section>
+
+
 
         <!-- Chart Section 1: Salario vs RIPTE -->
-        <section class="chart-container">
+        <section class="chart-container" style="margin-top: 6rem;">
             <div class="section-header">
                 <div>
                     <h2 class="section-title">Evolución Salario Promedio vs RIPTE</h2>
