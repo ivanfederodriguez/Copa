@@ -66,13 +66,16 @@ h3 {
 }
 
 .dashboard-title {
-    font-size: 2.25rem;
+    font-size: 1.75rem;
+    /* Reduced from 2.25rem */
     margin-bottom: 1rem;
+    text-align: left;
 }
 
 @media (max-width: 768px) {
     .dashboard-title {
-        font-size: 1.75rem;
+        font-size: 1.5rem;
+        /* Reduced from 1.75rem */
     }
 }
 
@@ -329,18 +332,15 @@ header {
     /* Slate 300 */
     color: var(--text-primary);
     /* Dark text */
-    padding: 0.5rem 2rem 0.5rem 1rem;
+    padding: 0.5rem 1rem;
     border-radius: 8px;
     font-family: var(--font-family);
     font-size: 0.95rem;
     font-weight: 600;
     cursor: pointer;
     appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%230f172a'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-    /* Dark arrow */
-    background-repeat: no-repeat;
-    background-position: right 0.75rem center;
-    background-size: 1em;
+    -webkit-appearance: none;
+    -moz-appearance: none;
     min-width: 200px;
     transition: all 0.2s ease;
     text-align: center;
@@ -388,8 +388,9 @@ header {
         /* Show toggle button */
     }
 
-    .period-select {
-        /* Adjust for mobile header placement if needed */
+    .mobile-nav-toggle {
+        display: block;
+        /* Show toggle button */
     }
 }
 
@@ -458,27 +459,27 @@ main {
 }
 
 .kpi-card {
-    background: var(--card-bg);
-    border: 1px solid var(--glass-border);
-    padding: 2rem;
+    background-color: var(--card-bg);
+    background-image: linear-gradient(90deg, var(--accent-primary), transparent);
+    background-size: 100% 4px;
+    background-repeat: no-repeat;
+    background-position: top left;
+    border: 1px solid var(--border-color);
     border-radius: 16px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    /* Subtle shadow for light mode */
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px var(--glass-border);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
-    overflow: hidden;
+    /* REQUIRED FOR TOOLTIP POSITIONING */
+    overflow: visible;
+    /* CRITICAL: Allows tooltips to break out of the card */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 145px;
 }
 
-.kpi-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 4px;
-    background: linear-gradient(90deg, var(--accent-primary), transparent);
-    opacity: 0.8;
-}
+
 
 .kpi-card:hover {
     transform: translateY(-5px);
@@ -510,15 +511,16 @@ main {
 /* Chart Section */
 .chart-container {
     background: var(--card-bg);
-    border: 1px solid var(--glass-border);
-    padding: 2rem;
+    border: 1px solid var(--border-color);
     border-radius: 20px;
-    margin-bottom: 4rem;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 10px 30px var(--glass-border);
+    position: relative;
+    /* REQUIRED FOR TOOLTIP POSITIONING */
+    overflow: visible;
     min-height: 350px;
     height: auto;
-    /* Allow container to grow to fit header + chart */
-    position: relative;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
 .chart-wrapper {
@@ -579,6 +581,89 @@ footer {
     .kpi-value {
         font-size: 1.75rem;
     }
+}
+
+/* --- Global Tooltips --- */
+.info-tooltip {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 22px;
+    height: 22px;
+    background-color: var(--text-secondary);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: help;
+    z-index: 100;
+    opacity: 0;
+    /* Hidden by default */
+    transition: all 0.2s ease;
+    margin: 0;
+}
+
+.kpi-card:hover>.info-tooltip,
+.chart-container:hover>.info-tooltip,
+.dashboard-card:hover>.info-tooltip {
+    opacity: 1;
+    /* Revealed when element is hovered */
+}
+
+.info-tooltip:hover {
+    background-color: var(--brand-dark);
+}
+
+/* Tooltip Text Bubble */
+.info-tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: calc(100% + 8px);
+    /* Appears BELOW the icon instead of above */
+    right: 0;
+    width: 220px;
+    padding: 10px 12px;
+    background-color: var(--brand-dark);
+    color: #fff;
+    font-size: 11.5px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 1.4;
+    text-align: justify;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    pointer-events: none;
+    z-index: 9999;
+}
+
+/* Tooltip Little Triangle */
+.info-tooltip::before {
+    content: '';
+    position: absolute;
+    top: 100%;
+    /* Points UP to the icon */
+    right: 5px;
+    border-width: 6px;
+    border-style: solid;
+    border-color: transparent transparent var(--brand-dark) transparent;
+    /* Inverted triangle */
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    pointer-events: none;
+    z-index: 9999;
+}
+
+.info-tooltip:hover::after,
+.info-tooltip:hover::before {
+    opacity: 1;
+    visibility: visible;
 }
 
 /* Hamburguer Menu Styles */

@@ -56,73 +56,95 @@
     <div class="main-content-wrapper">
 
         <main>
-            <div class="header-content" style="text-align: center; margin-bottom: 4rem;">
-                <h1 class="text-gradient dashboard-title" id="page-title">Análisis de Empleo
-                    Público</h1>
-                <p id="header-period" style="color: var(--text-secondary); font-size: 1.2rem; font-weight: 500;">
-                    Seguimiento de salarios, puestos de trabajo y poder adquisitivo.
+            <div class="header-content"
+                style="text-align: left; margin-bottom: 3rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <h1 class="text-gradient dashboard-title" id="page-title" style="margin-bottom: 0;">Análisis de Empleo
+                    Público Provincial</h1>
+
+                <!-- Month Selector -->
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <label for="monthSelector" style="color: var(--text-secondary); font-weight: 500;">Período:</label>
+                    <select id="monthSelector" class="period-select"
+                        style="padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-primary); font-family: 'Inter', sans-serif; font-size: 1rem; cursor: pointer; outline: none;"
+                        aria-label="Seleccionar periodo">
+                        <!-- Options will be populated by JS -->
+                    </select>
+                </div>
+            </div>
+
+            <!-- KPI Grid -->
+            <section class="hero-grid">
+                <article class="kpi-card">
+                    <div class="info-tooltip"
+                        data-tooltip="Promedio simple de los salarios brutos liquidados antes de descuentos, excluyendo conceptos como aguinaldo.">
+                        ?</div>
+                    <div class="kpi-label">Salario Promedio Bruto</div>
+                    <div class="kpi-value" id="kpi-avg-salary">...</div>
+                    <div class="kpi-sub" id="kpi-employees">Cargando datos...</div>
+                </article>
+
+                <article class="kpi-card">
+                    <div class="info-tooltip"
+                        data-tooltip="Gasto total devengado en salarios para los puestos de trabajo indicados.">?</div>
+                    <div class="kpi-label">Masa Salarial</div>
+                    <div class="kpi-value" id="kpi-total-wage">...</div>
+                    <div class="kpi-sub">Total mensual liquidado</div>
+                </article>
+
+                <article class="kpi-card">
+                    <div class="info-tooltip"
+                        data-tooltip="Aumento directo del salario promedio en términos interanuales.">?</div>
+                    <div class="kpi-label">Variación Nominal</div>
+                    <div class="kpi-value" id="kpi-nom-var">--%</div>
+                    <div class="kpi-sub" id="label-nom-period">Interanual</div>
+                </article>
+
+                <article class="kpi-card">
+                    <div class="info-tooltip"
+                        data-tooltip="Pérdida o ganancia en el poder de compra real del trabajador promedio del sector público.">
+                        ?</div>
+                    <div class="kpi-label">Variación Real</div>
+                    <div class="kpi-value" id="kpi-real-var">--%</div>
+                    <span style="color: var(--text-secondary);" id="label-real-period">Ajustado por IPC NEA</span>
+                </article>
+            </section>
+            <p
+                style="color: var(--text-secondary); font-size: 0.8rem; margin-top: -3rem; margin-bottom: 4rem; text-align: left; padding-left: 10px;">
+                Fuente: Cálculo en base a datos de SISPER e INDEC</p>
+
+            <div class="header-content" style="text-align: left; margin-top: 4rem; margin-bottom: 2rem;">
+                <h2 style="font-size: 1.75rem; margin-bottom: 0.5rem;" class="text-gradient dashboard-title">Relación
+                    Salario vs Canasta Básica</h2>
+                <p id="cbt-salario-subtitle" style="color: var(--text-secondary); font-size: 1rem;">
+                    Comparativa con la Canasta Básica Total (CBT) por adulto equivalente calculada por el IPECD.
                 </p>
             </div>
 
-            <section class="dashboard-section">
-                <h2 class="section-title">Salarios y Empleo</h2>
-                <p class="section-subtitle" style="margin-bottom: 2rem;">Fuente: Cálculo en base a datos de SISPER e
-                    INDEC
-                </p>
+            <section class="hero-grid">
+                <article class="kpi-card">
+                    <div class="info-tooltip"
+                        data-tooltip="Costo monetario mensual de la Canasta Básica individual y cuántas de ellas cubre el salario percibido.">
+                        ?</div>
+                    <div class="kpi-label" id="cbt-label-dynamic">Valor CBT</div>
+                    <div class="kpi-value" id="kpi-cbt-val">$...</div>
+                    <div class="kpi-sub">Línea de Pobreza Individual</div>
+                </article>
 
-                <div class="hero-grid">
-                    <article class="kpi-card">
-                        <div class="kpi-label">Salario Promedio</div>
-                        <div class="kpi-value" id="kpi-avg-salary">...</div>
-                        <div class="kpi-sub" id="kpi-employees">Cargando datos...</div>
-                    </article>
-
-                    <article class="kpi-card">
-                        <div class="kpi-label">Masa Salarial</div>
-                        <div class="kpi-value" id="kpi-total-wage">...</div>
-                        <div class="kpi-sub">Total mensual liquidado</div>
-                    </article>
-
-                    <article class="kpi-card">
-                        <div class="kpi-label">Variación Nominal</div>
-                        <div class="kpi-value" id="kpi-nom-var">--%</div>
-                        <div class="kpi-sub" id="label-nom-period">Interanual</div>
-                    </article>
-
-                    <article class="kpi-card">
-                        <div class="kpi-label">Variación Real</div>
-                        <div class="kpi-value" id="kpi-real-var">--%</div>
-                        <span style="color: var(--text-secondary);" id="label-real-period">Ajustado por IPC NEA</span>
-                    </article>
-                </div>
+                <article class="kpi-card">
+                    <div class="info-tooltip"
+                        data-tooltip="Costo monetario mensual de la Canasta Básica individual y cuántas de ellas cubre el salario percibido.">
+                        ?</div>
+                    <div class="kpi-label">Poder de Compra</div>
+                    <div class="kpi-value" id="kpi-cbt-ratio">--</div>
+                    <div class="kpi-sub">Canastas Básicas por Salario</div>
+                </article>
             </section>
-
-            <section class="dashboard-section" style="margin-top: 4rem;">
-                <h2 class="section-title">Relación Salario vs Canasta Básica</h2>
-                <p class="section-subtitle" style="margin-bottom: 2rem;">Comparativa con la Canasta Básica Total (CBT)
-                    por
-                    adulto equivalente calculada por el IPECD.</p>
-
-                <div class="hero-grid"
-                    style="grid-template-columns: repeat(2, 1fr); max-width: 900px; margin-bottom: 0;">
-                    <article class="kpi-card">
-                        <div class="kpi-label" id="cbt-label-dynamic">Valor CBT</div>
-                        <div class="kpi-value" id="kpi-cbt-val">$...</div>
-                        <div class="kpi-sub">Línea de Pobreza Individual</div>
-                    </article>
-
-                    <article class="kpi-card">
-                        <div class="kpi-label">Poder de Compra</div>
-                        <div class="kpi-value" id="kpi-cbt-ratio">--</div>
-                        <div class="kpi-sub">Canastas Básicas por Salario</div>
-                    </article>
-                </div>
-            </section>
-
-
 
             <!-- Chart Section 1: Salario vs RIPTE -->
             <section class="chart-container" style="margin-top: 6rem;">
+                <div class="info-tooltip"
+                    data-tooltip="Curva comparativa de la evolución del salario promedio provincial frente a la métrica nacional oficial de remuneraciones estatales y privadas.">
+                    ?</div>
                 <div class="section-header">
                     <div>
                         <h2 class="section-title">Evolución Salario Promedio vs RIPTE</h2>

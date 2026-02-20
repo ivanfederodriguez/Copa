@@ -38,8 +38,9 @@ function initMonthSelector(periods) {
     // Clear loading option
     selector.innerHTML = '';
 
-    // Populate options
-    periods.forEach(period => {
+    // Populate options (newest first)
+    const reversedPeriods = [...periods].reverse();
+    reversedPeriods.forEach(period => {
         const option = document.createElement('option');
         option.value = period.id;
         option.textContent = period.label + ' ' + period.year;
@@ -84,7 +85,7 @@ function renderDashboard(periodId) {
     // Update Header Text
     const headerTitle = document.querySelector('h1.text-gradient');
     if (headerTitle) {
-        headerTitle.textContent = `Coparticipación Federal - Análisis ${periodData.kpi.meta.periodo}`;
+        headerTitle.textContent = `Coparticipación Federal - Análisis Interanual`;
     }
 
     // Update Main Subtitle
@@ -144,24 +145,42 @@ function renderKPIs(kpi) {
     document.getElementById('kpi-recaudacion-prev').textContent = formatMillions(kpi.recaudacion.prev);
 
     // Var Nominal
-    const recVarNomEl = document.getElementById('kpi-recaudacion-var-nom');
-    const diffSign = kpi.recaudacion.diff_nom >= 0 ? '+' : '';
+    const recVarNomEl = document.getElementById('kpi-recaudacion-var-nom-abs');
+    const diffSign = kpi.recaudacion.diff_nom >= 0 ? '+' : '-';
     recVarNomEl.textContent = diffSign + formatMillions(Math.abs(kpi.recaudacion.diff_nom));
-    recVarNomEl.className = `kpi-value ${kpi.recaudacion.diff_nom >= 0 ? 'text-success' : 'text-danger'}`;
 
     const recVarNomSub = document.getElementById('kpi-recaudacion-var-nom-pct');
-    recVarNomSub.textContent = (kpi.recaudacion.var_nom >= 0 ? '▲ ' : '▼ ') + formatPercentage(kpi.recaudacion.var_nom).replace('+', '');
+    const pctSign = kpi.recaudacion.var_nom >= 0 ? '+' : '-';
+    recVarNomSub.textContent = pctSign + formatPercentage(Math.abs(kpi.recaudacion.var_nom)).replace('+', '').replace('-', '');
+    recVarNomSub.className = `kpi-value ${kpi.recaudacion.var_nom >= 0 ? 'text-success' : 'text-danger'}`;
 
     // Var Real (Check IPC Missing)
     const recVarRealEl = document.getElementById('real-var-val');
+    const recVarRealAbsEl = document.getElementById('real-var-abs');
 
     if (kpi.recaudacion.ipc_missing) {
         recVarRealEl.textContent = 'Sin datos';
         recVarRealEl.className = 'kpi-value text-secondary';
+        if (recVarRealAbsEl) recVarRealAbsEl.textContent = '--';
     } else {
         recVarRealEl.textContent = formatPercentage(kpi.recaudacion.var_real);
-        recVarRealEl.className = `kpi-value ${kpi.recaudacion.var_real >= 0 ? 'text-success' : 'text-secondary'}`;
-        if (kpi.recaudacion.var_real < 0) recVarRealEl.classList.add('text-danger');
+        recVarRealEl.className = `kpi-value ${kpi.recaudacion.var_real >= 0 ? 'text-success' : 'text-danger'}`;
+
+        // Calculate the absolute real value (Difference in current purchasing power)
+        // IPC used for calculation is given in kpi.recaudacion.ipc_used_for_calc (e.g. 30.5 for 30.5%)
+        const inflacionPct = kpi.recaudacion.ipc_used_for_calc / 100;
+
+        // Update the previous collection to today's money equivalent
+        const prevAjustado = kpi.recaudacion.prev * (1 + inflacionPct);
+
+        // The real diff is the current collection minus the adjusted previous collection
+        const diffReal = kpi.recaudacion.current - prevAjustado;
+
+        if (recVarRealAbsEl) {
+            const diffRealSign = diffReal >= 0 ? '+' : '-';
+            recVarRealAbsEl.textContent = diffRealSign + formatMillions(Math.abs(diffReal));
+            recVarRealAbsEl.className = diffReal >= 0 ? 'text-success' : 'text-danger';
+        }
     }
 
     // --- Masa Salarial ---
@@ -186,30 +205,48 @@ function renderKPIs(kpi) {
     document.getElementById('kpi-masa-prev').textContent = formatMillions(kpi.masa_salarial.prev);
 
     // Var Nominal Masa
-    const masaVarNomEl = document.getElementById('kpi-masa-var-nom');
-    const masaVarNomSub = document.getElementById('kpi-masa-var-nom-pct');
+    const masaVarNomPctEl = document.getElementById('kpi-masa-var-nom-pct');
+    const masaVarNomAbsEl = document.getElementById('kpi-masa-var-nom-abs');
 
     if (isIncomplete) {
-        masaVarNomEl.textContent = 'Sin datos';
-        masaVarNomEl.className = 'kpi-value text-secondary';
-        masaVarNomSub.textContent = ' - ';
+        if (masaVarNomPctEl) {
+            masaVarNomPctEl.textContent = 'Sin datos';
+            masaVarNomPctEl.className = 'kpi-value text-secondary';
+        }
+        if (masaVarNomAbsEl) masaVarNomAbsEl.textContent = ' - ';
     } else {
-        const masaDiffSign = kpi.masa_salarial.diff_nom >= 0 ? '+' : '';
-        masaVarNomEl.textContent = masaDiffSign + formatMillions(Math.abs(kpi.masa_salarial.diff_nom));
-        masaVarNomEl.className = `kpi-value ${kpi.masa_salarial.diff_nom >= 0 ? 'text-success' : 'text-danger'}`;
+        const masaDiffSign = kpi.masa_salarial.diff_nom >= 0 ? '+' : '-';
+        if (masaVarNomAbsEl) masaVarNomAbsEl.textContent = masaDiffSign + formatMillions(Math.abs(kpi.masa_salarial.diff_nom));
 
-        masaVarNomSub.textContent = (kpi.masa_salarial.var_nom >= 0 ? '▲ ' : '▼ ') + formatPercentage(kpi.masa_salarial.var_nom).replace('+', '');
+        const masaPctSign = kpi.masa_salarial.var_nom >= 0 ? '+' : '-';
+        if (masaVarNomPctEl) {
+            masaVarNomPctEl.textContent = masaPctSign + formatPercentage(Math.abs(kpi.masa_salarial.var_nom)).replace('+', '').replace('-', '');
+            masaVarNomPctEl.className = `kpi-value ${kpi.masa_salarial.var_nom >= 0 ? 'text-success' : 'text-danger'}`;
+        }
     }
 
     // Var Real Masa
     const masaVarRealEl = document.getElementById('kpi-masa-var-real');
+    const masaVarRealAbsEl = document.getElementById('masa-real-var-abs');
 
     if (isIncomplete || isIpcMissing) {
         masaVarRealEl.textContent = 'Sin datos';
         masaVarRealEl.className = 'kpi-value text-secondary';
+        if (masaVarRealAbsEl) masaVarRealAbsEl.textContent = '--';
     } else {
         masaVarRealEl.textContent = formatPercentage(kpi.masa_salarial.var_real);
         masaVarRealEl.className = `kpi-value ${kpi.masa_salarial.var_real >= 0 ? 'text-success' : 'text-danger'}`;
+
+        // Calculate the absolute real value for Masa Salarial
+        const inflacionPct = kpi.recaudacion.ipc_used_for_calc / 100;
+        const prevAjustado = kpi.masa_salarial.prev * (1 + inflacionPct);
+        const diffReal = kpi.masa_salarial.current - prevAjustado;
+
+        if (masaVarRealAbsEl) {
+            const diffRealSign = diffReal >= 0 ? '+' : '-';
+            masaVarRealAbsEl.textContent = diffRealSign + formatMillions(Math.abs(diffReal));
+            masaVarRealAbsEl.className = diffReal >= 0 ? 'text-success' : 'text-danger';
+        }
     }
 }
 

@@ -83,9 +83,34 @@ document.addEventListener('DOMContentLoaded', () => {
         fetch('../analisis-personal/dashboard_data.json').then(res => res.json())
     ])
         .then(([mainData, personalData]) => {
-            renderKPIs(mainData, personalData);
+            let currentPeriodId = mainData.meta.default_period_id;
+
+            // Setup selector
+            const selector = document.getElementById('monthSelector');
+            if (selector && mainData.meta.available_periods) {
+                // Populate options (newest first)
+                const reversedPeriods = [...mainData.meta.available_periods].reverse();
+                reversedPeriods.forEach(p => {
+                    const option = document.createElement('option');
+                    option.value = p.id;
+                    option.textContent = `${p.label} ${p.year}`;
+                    if (p.id === currentPeriodId) option.selected = true;
+                    selector.appendChild(option);
+                });
+
+                // Add event listener
+                selector.addEventListener('change', (e) => {
+                    currentPeriodId = e.target.value;
+                    renderKPIs(mainData, personalData, currentPeriodId);
+                    renderCoverageChart(mainData, currentPeriodId);
+                });
+            }
+
+            // Initial render
+            renderKPIs(mainData, personalData, currentPeriodId);
             renderChart(mainData);
-            renderSecondaryCharts(mainData);
+            renderPurchasingPowerChart(mainData);
+            renderCoverageChart(mainData, currentPeriodId);
         })
         .catch(error => console.error('Error loading dashboard data:', error));
 
@@ -109,9 +134,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-function renderKPIs(mainData, personalData) {
+function renderKPIs(mainData, personalData, currentPeriodId) {
     // 0. Update Main Title (Dynamic)
-    const currentPeriodId = mainData.meta.default_period_id; // '2026-01'
     const [year, month] = currentPeriodId.split('-');
 
     // Find label for this period in available_periods if possible
@@ -127,13 +151,12 @@ function renderKPIs(mainData, personalData) {
 
     const dashboardTitle = document.querySelector('.dashboard-title');
     if (dashboardTitle) {
-        dashboardTitle.textContent = `Tablero Ejecutivo Provincial - ${periodLabel} ${periodYear}`;
+        dashboardTitle.textContent = `Tablero Ejecutivo Provincial`;
     }
 
-    // 1. Evolución Real Coparticipación (Main)
+    // 1. Variación Real Coparticipación
     const copaData = mainData.data[currentPeriodId].kpi.recaudacion;
     const kpiCopaReal = copaData.var_real;
-
     updateKPI('kpi-copa-var-real', kpiCopaReal, true);
 
     // 2. Cobertura Salarial (Main)
@@ -143,15 +166,43 @@ function renderKPIs(mainData, personalData) {
     updateKPI('kpi-cobertura', kpiCobertura, false, true);
 
     // 3. Variación Real Salario (Personal)
-    const kpiSalarioReal = personalData.kpi.var_real_ia;
+    const personalMetrics = mainData.data[currentPeriodId].kpi.personal || {};
+
+    let kpiSalarioReal = null;
+    let kpiCbtRatio = null;
+
+    if (personalData && personalData.data && personalData.data[currentPeriodId] && personalData.data[currentPeriodId].kpi) {
+        kpiSalarioReal = personalData.data[currentPeriodId].kpi.var_real_ia;
+        kpiCbtRatio = personalData.data[currentPeriodId].kpi.cbt_ratio;
+    } else if (personalData && personalData.kpi) {
+        kpiSalarioReal = personalData.kpi.var_real_ia;
+        kpiCbtRatio = personalData.kpi.cbt_ratio;
+    }
+
+    if (personalMetrics.salario_var_real_ia !== null && personalMetrics.salario_var_real_ia !== undefined) {
+        kpiSalarioReal = personalMetrics.salario_var_real_ia;
+    } else {
+        kpiSalarioReal = null; // Enforce proper missing state
+    }
+
+    if (personalMetrics.cbt_ratio !== null && personalMetrics.cbt_ratio !== undefined) {
+        kpiCbtRatio = personalMetrics.cbt_ratio;
+    } else {
+        kpiCbtRatio = null;
+    }
+
     updateKPI('kpi-salario-var-real', kpiSalarioReal, true);
 
     // 4. Ratio CBT (Personal)
-    const kpiCbtRatio = personalData.kpi.cbt_ratio;
     const el = document.getElementById('kpi-cbt-ratio');
     if (el) {
-        el.textContent = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(kpiCbtRatio);
-        el.className = `kpi-value ${kpiCbtRatio >= 1.5 ? 'text-success' : 'text-danger'}`;
+        if (kpiCbtRatio === null || kpiCbtRatio === undefined) {
+            el.textContent = '--';
+            el.className = 'kpi-value text-secondary';
+        } else {
+            el.textContent = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(kpiCbtRatio);
+            el.className = `kpi-value ${kpiCbtRatio >= 1.5 ? 'text-success' : 'text-danger'}`;
+        }
     }
 }
 
@@ -266,95 +317,124 @@ function renderChart(mainData) {
     });
 }
 
-function renderSecondaryCharts(mainData) {
-    if (!mainData.secondary_charts) return;
+let purchasingPowerChartInstance = null;
+let coverageChartInstance = null;
 
-    // --- Purchasing Power Chart ---
+function renderPurchasingPowerChart(mainData) {
+    if (!mainData.secondary_charts || !mainData.secondary_charts.purchasing_power) return;
+
+    if (purchasingPowerChartInstance) {
+        purchasingPowerChartInstance.destroy();
+    }
+
     const ppData = mainData.secondary_charts.purchasing_power;
-    if (ppData) {
-        const ctxPP = document.getElementById('purchasingPowerChart').getContext('2d');
-        new Chart(ctxPP, {
-            type: 'bar',
-            data: {
-                labels: ppData.labels,
-                datasets: [{
-                    label: 'Salarios Promedio / CBT NEA',
-                    data: ppData.values,
-                    backgroundColor: '#0ea5e9', // Sky Blue
-                    borderWidth: 0,
-                    borderRadius: 4,
-                    barPercentage: 0.6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: function (context) {
-                                return context.raw.toFixed(2) + ' CBTs';
-                            }
+    const ctxPP = document.getElementById('purchasingPowerChart').getContext('2d');
+    purchasingPowerChartInstance = new Chart(ctxPP, {
+        type: 'bar',
+        data: {
+            labels: ppData.labels,
+            datasets: [{
+                label: 'Salarios Promedio / CBT NEA',
+                data: ppData.values,
+                backgroundColor: '#0ea5e9', // Sky Blue
+                borderWidth: 0,
+                borderRadius: 4,
+                barPercentage: 0.6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            return context.raw.toFixed(2) + ' CBTs';
                         }
                     }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    grid: { color: 'rgba(0,0,0,0.05)' },
+                    title: { display: true, text: 'Canastas' }
                 },
-                scales: {
-                    y: {
-                        beginAtZero: false,
-                        grid: { color: 'rgba(0,0,0,0.05)' },
-                        title: { display: true, text: 'Canastas' }
-                    },
-                    x: { grid: { display: false } }
-                }
+                x: { grid: { display: false } }
             }
-        });
+        }
+    });
+}
+
+function renderCoverageChart(mainData, periodId) {
+    if (!mainData.data[periodId]) return;
+
+    const periodData = mainData.data[periodId];
+
+    // Fallback to static if backend didn't provide enough data for selection?
+    // Actually we can compute directly from raw KPIs:
+    const recaudacionTotalM = periodData.kpi.recaudacion.current; // already in millions
+    const masaSalarialM = periodData.kpi.masa_salarial.current; // already in millions
+    const isMasaIncomplete = periodData.kpi.masa_salarial.is_incomplete;
+
+    // Convert to unscaled for chart, or keep as millions
+    const masaSalarial = masaSalarialM * 1000000;
+    const recaudacionTotal = recaudacionTotalM * 1000000;
+
+    let restoCopa = Math.max(0, recaudacionTotal - masaSalarial);
+    let masaSalarialToUse = masaSalarial;
+
+    if (isMasaIncomplete || masaSalarialToUse === 0) {
+        // If data is missing for the month, it's safer to avoid misleading chart
+        masaSalarialToUse = 0;
+        restoCopa = recaudacionTotal;
     }
 
-    // --- Coverage Chart ---
-    const covData = mainData.secondary_charts.coverage;
-    if (covData) {
-        // Update subtitle
-        const subtitle = document.getElementById('coverageSubtitle');
-        if (subtitle && covData.period) {
-            subtitle.textContent = `Masa Salarial vs Resto (${covData.period})`;
-        }
+    // Update subtitle
+    const subtitle = document.getElementById('coverageSubtitle');
+    if (subtitle && periodData.kpi.meta.periodo) {
+        subtitle.textContent = `Masa Salarial vs Resto (${periodData.kpi.meta.periodo})`;
+    }
 
-        const ctxCov = document.getElementById('coverageChart').getContext('2d');
-        new Chart(ctxCov, {
-            type: 'doughnut',
-            data: {
-                labels: ['Masa Salarial', 'Resto Coparticipación'],
-                datasets: [{
-                    data: [covData.masa_salarial, covData.resto_copa],
-                    backgroundColor: [
-                        '#eab308', // Yellow (Wage Bill)
-                        '#10b981'  // Green (Rest)
-                    ],
-                    borderWidth: 0,
-                    hoverOffset: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { usePointStyle: true, padding: 20 }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function (context) {
-                                const val = context.raw;
-                                const total = context.chart._metasets[context.datasetIndex].total;
-                                const pct = ((val / total) * 100).toFixed(1);
-                                return `${context.label}: ${pct}% ($${(val / 1000000).toFixed(0)}M)`;
-                            }
+    if (coverageChartInstance) {
+        coverageChartInstance.destroy();
+    }
+
+    const ctxCov = document.getElementById('coverageChart').getContext('2d');
+    coverageChartInstance = new Chart(ctxCov, {
+        type: 'doughnut',
+        data: {
+            labels: ['Masa Salarial', 'Resto Coparticipación'],
+            datasets: [{
+                data: [masaSalarialToUse, restoCopa],
+                backgroundColor: [
+                    '#eab308', // Yellow (Wage Bill)
+                    '#10b981'  // Green (Rest)
+                ],
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { usePointStyle: true, padding: 20 }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            const val = context.raw;
+                            const total = context.chart._metasets[context.datasetIndex].total;
+                            const pct = total > 0 ? ((val / total) * 100).toFixed(1) : "0.0";
+                            return `${context.label}: ${pct}% ($${(val / 1000000).toFixed(0)}M)`;
                         }
                     }
                 }
             }
-        });
-    }
+        }
+    });
 }

@@ -1,3 +1,6 @@
+let dashboardData = null;
+let currentPeriodId = null;
+let chartInstance = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     // Display current user info
@@ -24,11 +27,44 @@ document.addEventListener('DOMContentLoaded', () => {
     fetch('dashboard_data.json')
         .then(response => response.json())
         .then(data => {
-            renderKPIs(data.kpi);
-            renderCharts(data.charts);
+            dashboardData = data;
+            initMonthSelector();
+            updateDashboard();
         })
         .catch(error => console.error('Error loading data:', error));
 });
+
+function initMonthSelector() {
+    const selector = document.getElementById('monthSelector');
+    if (!selector) return;
+
+    const periods = [...dashboardData.meta.available_periods].reverse();
+
+    selector.innerHTML = '';
+    periods.forEach(p => {
+        const option = document.createElement('option');
+        option.value = p.id;
+        option.textContent = `${p.label} ${p.year}`;
+        selector.appendChild(option);
+    });
+
+    currentPeriodId = dashboardData.meta.default_period_id;
+    selector.value = currentPeriodId;
+
+    selector.addEventListener('change', (e) => {
+        currentPeriodId = e.target.value;
+        updateDashboard();
+    });
+}
+
+function updateDashboard() {
+    if (!dashboardData || !currentPeriodId) return;
+    const periodData = dashboardData.data[currentPeriodId];
+    if (periodData) {
+        renderKPIs(periodData.kpi);
+        renderCharts(periodData.charts);
+    }
+}
 
 function formatCurrency(value) {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(value);
@@ -89,11 +125,14 @@ function renderKPIs(kpi) {
         const realVarEl = document.getElementById('kpi-real-var');
         realVarEl.textContent = formatPercentage(kpi.var_real_ia);
         realVarEl.className = `kpi-value ${kpi.var_real_ia >= 0 ? 'text-success' : 'text-danger'}`;
-        document.getElementById('label-real-period').innerHTML = `Ajustado por IPC NEA<br>vs ${kpi.periodo_anterior}`;
+        document.getElementById('label-real-period').textContent = 'Variación i.a. Deflactada';
     }
 
     // Update Header Period
-    document.getElementById('header-period').textContent = `Análisis de puestos de trabajo y masa salarial | ${kpi.periodo_actual}`;
+    const headerPeriodEl = document.getElementById('header-period');
+    if (headerPeriodEl) {
+        headerPeriodEl.textContent = `Análisis de puestos de trabajo y masa salarial | ${kpi.periodo_actual}`;
+    }
 
     // --- Section 2: CBT ---
 
@@ -125,7 +164,11 @@ function renderCharts(charts) {
     // Chart 1: Avg Salary vs RIPTE
     const ctx1 = document.getElementById('chartAvgVsRipte').getContext('2d');
 
-    new Chart(ctx1, {
+    if (chartInstance) {
+        chartInstance.destroy();
+    }
+
+    chartInstance = new Chart(ctx1, {
         type: 'line',
         data: {
             labels: charts.labels,
