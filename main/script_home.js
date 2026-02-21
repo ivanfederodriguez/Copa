@@ -368,33 +368,73 @@ function renderPurchasingPowerChart(mainData) {
 }
 
 function renderCoverageChart(mainData, periodId) {
-    if (!mainData.data[periodId]) return;
+    if (!mainData.data[periodId] || !mainData.meta.available_periods) return;
 
-    const periodData = mainData.data[periodId];
+    // Obtener los períodos cronológicamente
+    const periods = mainData.meta.available_periods;
+    const selectedIdx = periods.findIndex(p => p.id === periodId);
 
-    // Fallback to static if backend didn't provide enough data for selection?
-    // Actually we can compute directly from raw KPIs:
-    const recaudacionTotalM = periodData.kpi.recaudacion.current; // already in millions
-    const masaSalarialM = periodData.kpi.masa_salarial.current; // already in millions
-    const isMasaIncomplete = periodData.kpi.masa_salarial.is_incomplete;
+    // Si no se encuentra el período seleccionado, abortar
+    if (selectedIdx === -1) return;
 
-    // Convert to unscaled for chart, or keep as millions
-    const masaSalarial = masaSalarialM * 1000000;
-    const recaudacionTotal = recaudacionTotalM * 1000000;
+    // Tomar los últimos 12 meses (hasta el mes seleccionado inclusive)
+    const startIndex = Math.max(0, selectedIdx - 11);
+    const chartPeriods = periods.slice(startIndex, selectedIdx + 1);
 
-    let restoCopa = Math.max(0, recaudacionTotal - masaSalarial);
-    let masaSalarialToUse = masaSalarial;
+    const labels = [];
+    const masaSalarialPctData = [];
+    const restoCopaPctData = [];
+    const rawMasaData = [];
+    const rawRestoData = [];
 
-    if (isMasaIncomplete || masaSalarialToUse === 0) {
-        // If data is missing for the month, it's safer to avoid misleading chart
-        masaSalarialToUse = 0;
-        restoCopa = recaudacionTotal;
-    }
+    // Calcular porcentajes para cada mes seleccionado
+    chartPeriods.forEach(p => {
+        const pData = mainData.data[p.id];
+        if (!pData) return;
 
-    // Update subtitle
+        // Ej: "Septiembre 2025" a "Sep 25" para el label podría ser mejor, pero usamos Label + Year
+        const shortLabel = p.label.substring(0, 3) + ' ' + p.year.toString().slice(-2);
+        labels.push(shortLabel);
+
+        const recaudacionTotalM = pData.kpi.recaudacion.current;
+        const masaSalarialM = pData.kpi.masa_salarial.current;
+        const isMasaIncomplete = pData.kpi.masa_salarial.is_incomplete;
+
+        let masaSalarial = masaSalarialM * 1000000;
+        let recaudacionTotal = recaudacionTotalM * 1000000;
+        let restoCopa = Math.max(0, recaudacionTotal - masaSalarial);
+
+        if (isMasaIncomplete || masaSalarial === 0) {
+            masaSalarial = 0;
+            restoCopa = recaudacionTotal;
+        }
+
+        const total = masaSalarial + restoCopa;
+        let masaPct = 0;
+        let restoPct = 0;
+
+        if (total > 0) {
+            masaPct = (masaSalarial / total) * 100;
+            restoPct = (restoCopa / total) * 100;
+        }
+
+        masaSalarialPctData.push(masaPct);
+        restoCopaPctData.push(restoPct);
+
+        rawMasaData.push(masaSalarial);
+        rawRestoData.push(restoCopa);
+    });
+
+    // Actualizar Subtítulo
     const subtitle = document.getElementById('coverageSubtitle');
-    if (subtitle && periodData.kpi.meta.periodo) {
-        subtitle.textContent = `Masa Salarial vs Resto (${periodData.kpi.meta.periodo})`;
+    if (subtitle) {
+        const startLabel = chartPeriods.length > 0 ? chartPeriods[0].label + ' ' + chartPeriods[0].year : '';
+        const endLabel = chartPeriods.length > 0 ? chartPeriods[chartPeriods.length - 1].label + ' ' + chartPeriods[chartPeriods.length - 1].year : '';
+        if (startLabel !== endLabel) {
+            subtitle.textContent = `Evolución Cobertura (${startLabel} a ${endLabel})`;
+        } else {
+            subtitle.textContent = `Evolución Cobertura (${startLabel})`;
+        }
     }
 
     if (coverageChartInstance) {
@@ -403,18 +443,25 @@ function renderCoverageChart(mainData, periodId) {
 
     const ctxCov = document.getElementById('coverageChart').getContext('2d');
     coverageChartInstance = new Chart(ctxCov, {
-        type: 'doughnut',
+        type: 'bar',
         data: {
-            labels: ['Masa Salarial', 'Resto Coparticipación'],
-            datasets: [{
-                data: [masaSalarialToUse, restoCopa],
-                backgroundColor: [
-                    '#eab308', // Yellow (Wage Bill)
-                    '#10b981'  // Green (Rest)
-                ],
-                borderWidth: 0,
-                hoverOffset: 4
-            }]
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Masa Salarial',
+                    data: masaSalarialPctData,
+                    backgroundColor: '#10b981', // green
+                    borderWidth: 0,
+                    barPercentage: 0.6
+                },
+                {
+                    label: 'Resto Coparticipación',
+                    data: restoCopaPctData,
+                    backgroundColor: '#94a3b8', // gray
+                    borderWidth: 0,
+                    barPercentage: 0.6
+                }
+            ]
         },
         options: {
             responsive: true,
@@ -427,12 +474,37 @@ function renderCoverageChart(mainData, periodId) {
                 tooltip: {
                     callbacks: {
                         label: function (context) {
-                            const val = context.raw;
-                            const total = context.chart._metasets[context.datasetIndex].total;
-                            const pct = total > 0 ? ((val / total) * 100).toFixed(1) : "0.0";
-                            return `${context.label}: ${pct}% ($${(val / 1000000).toFixed(0)}M)`;
+                            const datasetIndex = context.datasetIndex;
+                            const dataIndex = context.dataIndex;
+                            const pctVal = context.raw.toFixed(1);
+
+                            let rawVal = 0;
+                            if (datasetIndex === 0) {
+                                rawVal = rawMasaData[dataIndex];
+                            } else {
+                                rawVal = rawRestoData[dataIndex];
+                            }
+
+                            return `${context.dataset.label}: ${pctVal}% ($${Math.round(rawVal / 1000000).toLocaleString('es-AR')}M)`;
                         }
                     }
+                }
+            },
+            scales: {
+                x: {
+                    stacked: true,
+                    grid: { display: false }
+                },
+                y: {
+                    stacked: true,
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function (value) {
+                            return value + '%';
+                        }
+                    },
+                    grid: { color: 'rgba(0,0,0,0.05)' }
                 }
             }
         }

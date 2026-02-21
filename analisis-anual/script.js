@@ -92,7 +92,7 @@ function renderAnnualDashboard() {
     // 1. Current Year Card
     const cardCurrent = `
         <article class="kpi-card">
-            <div class="info-tooltip" data-tooltip="Métricas calculadas sobre la línea base elegida para el ciclo de estudio.">?</div>
+            <div class="info-tooltip" data-tooltip="Monto total anual, en billones de pesos corrientes, de los ingresos por coparticipación del periodo seleccionado. El valor real se obtuvo deflactando por el IPC del NEA.">?</div>
             <div class="kpi-label">Año ${currentYear.year}</div>
             <div class="kpi-value text-xl">${formatCurrency(currentYear.nominal)}</div>
             <div class="kpi-sub">
@@ -104,7 +104,7 @@ function renderAnnualDashboard() {
     // 2. Prev Year Card
     const cardPrev = `
         <article class="kpi-card">
-            <div class="info-tooltip" data-tooltip="Valores consolidados al cierre del año calendario anterior, logrando un punto de referencia fiable.">?</div>
+            <div class="info-tooltip" data-tooltip="Monto total anual, en billones de pesos corrientes, de los ingresos por coparticipación del año anterior al periodo seleccionado. El valor real se obtuvo deflactando por el IPC del NEA.">?</div>
             <div class="kpi-label">Año ${prevYear.year}</div>
             <div class="kpi-value text-xl" style="color: var(--text-secondary);">${formatCurrency(prevYear.nominal)}</div>
             <div class="kpi-sub">
@@ -119,7 +119,7 @@ function renderAnnualDashboard() {
 
     const cardVarNom = `
         <article class="kpi-card">
-            <div class="info-tooltip" data-tooltip="Crecimiento absoluto del monto sin purgar el impacto de la inflación local o nacional.">?</div>
+            <div class="info-tooltip" data-tooltip="Muestra la variación absoluta, en miles de millones de pesos corrientes, entre los ingresos anuales totales por coparticipación del período seleccionado y los del año anterior.">?</div>
             <div class="kpi-label">Variación Nominal</div>
             <div class="kpi-value ${varNom >= 0 ? 'text-success' : 'text-danger'}">
                 ${varNom >= 0 ? '+' : ''}${formatCurrency(diffNom).replace('Billones', 'B').replace('Mil Millones', 'MM').replace('Mil M', 'MM')}
@@ -137,7 +137,7 @@ function renderAnnualDashboard() {
 
     const cardVarReal = `
         <article class="kpi-card">
-            <div class="info-tooltip" data-tooltip="Atenuación inflacionaria. Muestra la diferencia de sus valores reales constantes ajustados por IPC a la fecha base.">?</div>
+            <div class="info-tooltip" data-tooltip="Muestra la variación absoluta, en millones de pesos en términos reales, entre los ingresos anuales totales por coparticipación del período seleccionado y los del año anterior. Los montos reales se obtuvieron deflactando con el IPC del NEA.">?</div>
             <div class="kpi-label">Variación Real</div>
             <div class="kpi-value ${varReal >= 0 ? 'text-success' : 'text-danger'}">
                 ${varReal >= 0 ? '+' : ''}${formatCurrency(diffReal).replace('Billones', 'B').replace('Mil Millones', 'MM').replace('Mil M', 'MM')}

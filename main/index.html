@@ -82,7 +82,7 @@
                 <!-- 1. Var Real Coparticipación -->
                 <article class="kpi-card">
                     <div class="info-tooltip"
-                        data-tooltip="Muestra la diferencia porcentual real de la coparticipación frente al mismo mes del año anterior, ajustada por el IPC local.">
+                        data-tooltip="Muestra la variación porcentual interanual de la coparticipación en términos reales del período seleccionado respecto al mismo período del año anterior.  La coparticipación se deflacta por el IPC del NEA.">
                         ?</div>
                     <div class="kpi-label">VARIACIÓN REAL COPARTICIPACIÓN</div>
                     <div class="kpi-value" id="kpi-copa-var-real">Loading...</div>
@@ -95,7 +95,7 @@
                 <!-- 2. Cobertura Salarial -->
                 <article class="kpi-card">
                     <div class="info-tooltip"
-                        data-tooltip="Porcentaje de la masa salarial bruta mensual que se logra cubrir exclusivamente considerando los ingresos por coparticipación de ese mes.">
+                        data-tooltip="Muestra la participación relativa de la masa salarial total que se cubre con los ingresos de coparticipación del período seleccionado.">
                         ?</div>
                     <div class="kpi-label">Cobertura Salarial</div>
                     <div class="kpi-value" id="kpi-cobertura">Loading...</div>
@@ -107,7 +107,7 @@
                 <!-- 3. Variación Real Salario -->
                 <article class="kpi-card">
                     <div class="info-tooltip"
-                        data-tooltip="Diferencia interanual del salario promedio tras descontar el impacto de la inflación local.">
+                        data-tooltip="Muestra la variación porcentual interanual del salario promedio en términos reales del periodo seleccionado respecto al mismo periodo del año anterior. El salario se deflacta por el IPC del NEA.">
                         ?</div>
                     <div class="kpi-label">VARIACIÓN SALARIAL REAL</div>
                     <div class="kpi-value" id="kpi-salario-var-real">Loading...</div>
@@ -119,7 +119,7 @@
                 <!-- 4. Ratio CBT -->
                 <article class="kpi-card">
                     <div class="info-tooltip"
-                        data-tooltip="Cantidad de Canastas Básicas Totales (CBT) individuales que se pueden adquirir con el salario promedio.">
+                        data-tooltip="Mide cuántas Canastas Básicas Totales (CBT) , para un adulto equivalente,  pueden ser adquiridas con el salario promedio correspondiente al período seleccionado.">
                         ?</div>
                     <div class="kpi-label">Poder de Compra</div>
                     <div class="kpi-value" id="kpi-cbt-ratio">Loading...</div>
@@ -138,7 +138,7 @@
             <!-- Chart Section (Single Chart - Top) -->
             <section class="chart-container">
                 <div class="info-tooltip"
-                    data-tooltip="Comparativa mes a mes del crecimiento porcentual interanual de la recaudación frente al crecimiento de la inflación nacional.">
+                    data-tooltip="Comparación de la evolución mensual de la variación interanual de los ingresos provinciales por coparticipación y el IPC del NEA.">
                     ?</div>
                 <div class="section-header">
                     <div>
@@ -159,7 +159,7 @@
                 <!-- Purchasing Power Chart -->
                 <div class="chart-container" style="margin-bottom: 0;">
                     <div class="info-tooltip"
-                        data-tooltip="Evolución histórica del alcance adquisitivo del salario frente al valor de la Canasta Básica Total regional.">
+                        data-tooltip="Evolución de la cantidad de Canastas Básicas Totales (CBT) para un adulto equivalente que pueden ser adquiridas con el salario promedio.">
                         ?</div>
                     <div class="section-header">
                         <div>
@@ -170,23 +170,30 @@
                     <div class="chart-wrapper">
                         <canvas id="purchasingPowerChart"></canvas>
                     </div>
+                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 1rem; text-align: left;">
+                        Fuente: INDEC y SISPER
+                    </p>
                 </div>
 
                 <!-- Coverage Chart -->
                 <div class="chart-container" style="margin-bottom: 0;">
                     <div class="info-tooltip"
-                        data-tooltip="Distribución visual de los ingresos por coparticipación mostrando qué porción es retenida para afrontar la masa salarial mensual.">
+                        data-tooltip="Evolucion de la participación de la masa salarial en la coparticipación">
                         ?</div>
                     <div class="section-header">
                         <div>
                             <h2 class="section-title">Cobertura Salarial</h2>
                             <p class="section-subtitle" id="coverageSubtitle">Masa Salarial vs Resto de Coparticipación
+                                (Evolución)
                             </p>
                         </div>
                     </div>
                     <div class="chart-wrapper">
                         <canvas id="coverageChart"></canvas>
                     </div>
+                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 1rem; text-align: left;">
+                        Fuente: SISPER y Ministerio de Economía de la Nación
+                    </p>
                 </div>
             </section>
 
