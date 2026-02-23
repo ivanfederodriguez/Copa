@@ -115,21 +115,26 @@ document.addEventListener('DOMContentLoaded', () => {
         .catch(error => console.error('Error loading dashboard data:', error));
 
     // Mobile nav toggle logic
-    const toggle = document.getElementById('nav-toggle');
-    const menu = document.getElementById('navMenuMobile');
+    const toggle = document.getElementById('mobileNavToggle');
+    const sidebar = document.getElementById('sidebar');
 
-    if (toggle && menu) {
+    if (toggle && sidebar) {
         toggle.addEventListener('click', (e) => {
             e.stopPropagation();
-            toggle.classList.toggle('open');
-            menu.classList.toggle('show');
+            sidebar.classList.toggle('open');
         });
 
         document.addEventListener('click', (e) => {
-            if (menu.classList.contains('show') && !menu.contains(e.target) && e.target !== toggle) {
-                menu.classList.remove('show');
-                toggle.classList.remove('open');
+            if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && e.target !== toggle) {
+                sidebar.classList.remove('open');
             }
+        });
+
+        const links = sidebar.querySelectorAll('.nav-link-vertical');
+        links.forEach(link => {
+            link.addEventListener('click', () => {
+                sidebar.classList.remove('open');
+            });
         });
     }
 });
@@ -238,14 +243,22 @@ function renderChart(mainData) {
     const ctx = document.getElementById('executiveChart').getContext('2d');
     const chartData = mainData.global_charts;
 
+    // Limit to 6 periods on mobile
+    const isMobile = window.innerWidth <= 768;
+    const maxPeriods = isMobile ? 6 : chartData.labels.length;
+
+    const labels = chartData.labels.slice(-maxPeriods);
+    const copa_var_interanual = chartData.copa_var_interanual.slice(-maxPeriods);
+    const ipc_var_interanual = chartData.ipc_var_interanual.slice(-maxPeriods);
+
     new Chart(ctx, {
         type: 'line',
         data: {
-            labels: chartData.labels,
+            labels: labels,
             datasets: [
                 {
                     label: 'Var. Interanual Coparticipación (%)',
-                    data: chartData.copa_var_interanual,
+                    data: copa_var_interanual,
                     borderColor: '#10b981', // Brand Green
                     backgroundColor: 'transparent',
                     borderWidth: 3,
@@ -256,7 +269,7 @@ function renderChart(mainData) {
                 },
                 {
                     label: 'Inflación Interanual (%)',
-                    data: chartData.ipc_var_interanual,
+                    data: ipc_var_interanual,
                     borderColor: '#94a3b8', // Slate Gray
                     backgroundColor: 'transparent',
                     borderWidth: 2,
@@ -328,14 +341,21 @@ function renderPurchasingPowerChart(mainData) {
     }
 
     const ppData = mainData.secondary_charts.purchasing_power;
+
+    // Limit to 6 periods on mobile
+    const isMobile = window.innerWidth <= 768;
+    const maxPeriods = isMobile ? 6 : ppData.labels.length;
+    const labels = ppData.labels.slice(-maxPeriods);
+    const values = ppData.values.slice(-maxPeriods);
+
     const ctxPP = document.getElementById('purchasingPowerChart').getContext('2d');
     purchasingPowerChartInstance = new Chart(ctxPP, {
         type: 'bar',
         data: {
-            labels: ppData.labels,
+            labels: labels,
             datasets: [{
                 label: 'Salarios Promedio / CBT NEA',
-                data: ppData.values,
+                data: values,
                 backgroundColor: '#0ea5e9', // Sky Blue
                 borderWidth: 0,
                 borderRadius: 4,
@@ -357,7 +377,7 @@ function renderPurchasingPowerChart(mainData) {
             },
             scales: {
                 y: {
-                    beginAtZero: false,
+                    beginAtZero: true,
                     grid: { color: 'rgba(0,0,0,0.05)' },
                     title: { display: true, text: 'Canastas' }
                 },
@@ -377,8 +397,10 @@ function renderCoverageChart(mainData, periodId) {
     // Si no se encuentra el período seleccionado, abortar
     if (selectedIdx === -1) return;
 
-    // Tomar los últimos 12 meses (hasta el mes seleccionado inclusive)
-    const startIndex = Math.max(0, selectedIdx - 11);
+    // Tomar los últimos meses (12 en desktop, 6 en mobile)
+    const isMobile = window.innerWidth <= 768;
+    const numMonths = isMobile ? 6 : 12;
+    const startIndex = Math.max(0, selectedIdx - (numMonths - 1));
     const chartPeriods = periods.slice(startIndex, selectedIdx + 1);
 
     const labels = [];

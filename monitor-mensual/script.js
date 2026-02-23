@@ -340,30 +340,27 @@ function renderChart(dailyData, monthName, currentYear, prevYear) {
 
 // --- Navigation Toggle ---
 document.addEventListener('DOMContentLoaded', () => {
-    const toggle = document.getElementById('nav-toggle');
-    const menu = document.getElementById('navMenuMobile');
+    const toggle = document.getElementById('mobileNavToggle');
+    const sidebar = document.getElementById('sidebar');
 
-    if (toggle && menu) {
+    if (toggle && sidebar) {
         toggle.addEventListener('click', (e) => {
             e.stopPropagation();
-            toggle.classList.toggle('open');
-            menu.classList.toggle('show');
+            sidebar.classList.toggle('open');
         });
 
         // Close when clicking outside
         document.addEventListener('click', (e) => {
-            if (menu.classList.contains('show') && !menu.contains(e.target) && e.target !== toggle) {
-                menu.classList.remove('show');
-                toggle.classList.remove('open');
+            if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && e.target !== toggle) {
+                sidebar.classList.remove('open');
             }
         });
 
         // Close on link click
-        const links = menu.querySelectorAll('.nav-link');
+        const links = sidebar.querySelectorAll('.nav-link-vertical');
         links.forEach(link => {
             link.addEventListener('click', () => {
-                menu.classList.remove('show');
-                toggle.classList.remove('open');
+                sidebar.classList.remove('open');
             });
         });
     }

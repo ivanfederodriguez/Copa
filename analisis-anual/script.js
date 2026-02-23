@@ -38,21 +38,26 @@ document.addEventListener('DOMContentLoaded', () => {
         .catch(error => console.error('Error loading data:', error));
 
     // Nav Toggle Logic
-    const toggle = document.getElementById('nav-toggle');
-    const menu = document.getElementById('nav-menu');
+    const toggle = document.getElementById('mobileNavToggle');
+    const sidebar = document.getElementById('sidebar');
 
-    if (toggle && menu) {
+    if (toggle && sidebar) {
         toggle.addEventListener('click', (e) => {
             e.stopPropagation();
-            toggle.classList.toggle('open');
-            menu.classList.toggle('show');
+            sidebar.classList.toggle('open');
         });
 
         document.addEventListener('click', (e) => {
-            if (menu.classList.contains('show') && !menu.contains(e.target) && e.target !== toggle) {
-                menu.classList.remove('show');
-                toggle.classList.remove('open');
+            if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && e.target !== toggle) {
+                sidebar.classList.remove('open');
             }
+        });
+
+        const links = sidebar.querySelectorAll('.nav-link-vertical');
+        links.forEach(link => {
+            link.addEventListener('click', () => {
+                sidebar.classList.remove('open');
+            });
         });
     }
 });
