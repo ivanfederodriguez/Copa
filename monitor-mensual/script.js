@@ -120,6 +120,7 @@ function renderDashboard(periodId) {
 
     // Update Chart
     renderChart(periodData.charts.daily, monthName, currentYear, prevYear);
+    renderCopaVsSalarioChart(periodData.charts.copa_vs_salario);
 }
 
 // ... Format functions ...
@@ -334,6 +335,104 @@ function renderChart(dailyData, monthName, currentYear, prevYear) {
                 }
             },
             interaction: { mode: 'index', intersect: false },
+        }
+    });
+}
+
+let chartCopaInstance = null;
+
+function renderCopaVsSalarioChart(dataCopa) {
+    const ctx = document.getElementById('chartCopaVsSalario');
+    if (!ctx) return;
+
+    if (chartCopaInstance) {
+        chartCopaInstance.destroy();
+    }
+
+    if (!dataCopa) return;
+
+    const colorPrimary = '#10b981';
+    const colorAccent = '#af2f2f';
+
+    chartCopaInstance = new Chart(ctx.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: dataCopa.labels,
+            datasets: [
+                {
+                    type: 'line',
+                    label: 'Masa Salarial Objetivo',
+                    data: dataCopa.salario_target,
+                    borderColor: colorAccent,
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    pointRadius: 0,
+                    fill: false,
+                    yAxisID: 'y'
+                },
+                {
+                    type: 'bar',
+                    label: 'Coparticipación Acumulada',
+                    data: dataCopa.cumulative_copa,
+                    backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                    borderColor: colorPrimary,
+                    borderWidth: 1,
+                    borderRadius: 4,
+                    yAxisID: 'y'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20,
+                        font: { size: 12, weight: '600' }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    titleColor: '#1e293b',
+                    bodyColor: '#475569',
+                    borderColor: 'rgba(0,0,0,0.1)',
+                    borderWidth: 1,
+                    padding: 12,
+                    displayColors: true,
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label: function (context) {
+                            let label = context.dataset.label || '';
+                            if (context.parsed.y !== null) {
+                                return `${label}: $${new Intl.NumberFormat('es-AR').format(Math.round(context.parsed.y))} M`;
+                            }
+                        }
+                    }
+                }
+            },
+            interaction: {
+                mode: 'index',
+                axis: 'x',
+                intersect: false
+            },
+            scales: {
+                y: {
+                    grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false },
+                    ticks: {
+                        font: { size: 11 },
+                        color: '#64748b',
+                        callback: (value) => '$' + new Intl.NumberFormat('es-AR').format(Math.round(value)) + ' M'
+                    }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { size: 11 } }
+                }
+            }
         }
     });
 }
