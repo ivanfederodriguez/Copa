@@ -2,6 +2,76 @@ let dashboardData = null;
 let currentPeriodId = null;
 let chartInstance = null;
 
+// Global Chart.js Legend Click Override - "Solo" Behavior
+const customLegendClick = function (e, legendItem, legend) {
+    const index = legendItem.datasetIndex;
+    const ci = legend.chart;
+    const meta = ci.getDatasetMeta(index);
+
+    // Check if the clicked item is the ONLY visible item
+    let isOnlyVisible = true;
+    for (let i = 0; i < ci.data.datasets.length; i++) {
+        if (i !== index) {
+            const m = ci.getDatasetMeta(i);
+            if (!m.hidden) {
+                isOnlyVisible = false;
+                break;
+            }
+        }
+    }
+
+    if (isOnlyVisible) {
+        // If it was the only one visible, show all datasets
+        for (let i = 0; i < ci.data.datasets.length; i++) {
+            ci.getDatasetMeta(i).hidden = null;
+        }
+    } else {
+        // Standard "solo" behavior: hide all EXCEPT the clicked one
+        for (let i = 0; i < ci.data.datasets.length; i++) {
+            ci.getDatasetMeta(i).hidden = (i !== index);
+        }
+        // Ensure the clicked one is visible
+        meta.hidden = null;
+    }
+
+    ci.update();
+    ci.update();
+};
+
+if (typeof Chart !== 'undefined') {
+    Chart.defaults.plugins.legend.onClick = customLegendClick;
+
+    // Emphasize visible legend items instead of striking/fading hidden ones
+    const originalGenerateLabels = Chart.defaults.plugins.legend.labels.generateLabels;
+    Chart.defaults.plugins.legend.labels.generateLabels = function (chart) {
+        const labels = originalGenerateLabels(chart);
+
+        // Count how many are visible
+        const visibleCount = labels.filter(l => !l.hidden).length;
+        const totalCount = labels.length;
+        const isFiltering = visibleCount < totalCount;
+
+        labels.forEach(label => {
+            label.textDecoration = 'none'; // Never strikethrough
+
+            if (label.hidden) {
+                // If hidden, just make the color box empty/transparent
+                label.fillStyle = 'transparent';
+                label.strokeStyle = '#cbd5e1'; // slate-300
+                label.fontColor = '#64748b'; // slate-500
+            } else {
+                // If visible AND we are filtering, emphasize it
+                if (isFiltering) {
+                    label.fontColor = '#0f172a'; // slate-900 (darker)
+                } else {
+                    label.fontColor = '#64748b'; // normal
+                }
+            }
+        });
+        return labels;
+    };
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // Display current user info
     const currentUser = Auth.getCurrentUser();
