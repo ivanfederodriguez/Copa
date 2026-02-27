@@ -108,20 +108,37 @@ function initMonthSelector() {
     const selector = document.getElementById('monthSelector');
     if (!selector) return;
 
-    const periods = [...dashboardData.meta.available_periods].reverse();
+    const periods = dashboardData.meta.available_periods;
+    const defaultId = dashboardData.meta.default_period_id;
+    const defaultIndex = periods.findIndex(p => p.id === defaultId);
+
+    const reversedPeriods = [...periods].reverse();
 
     selector.innerHTML = '';
-    periods.forEach(p => {
+    reversedPeriods.forEach(p => {
         const option = document.createElement('option');
         option.value = p.id;
         option.textContent = `${p.label} ${p.year}`;
+
+        // Highlight months beyond the default
+        const pIndex = periods.findIndex(per => per.id === p.id);
+        if (pIndex > defaultIndex) {
+            option.style.color = '#ef4444';
+            option.dataset.incomplete = 'true';
+            option.textContent += ' (Incompleto)';
+        }
+
         selector.appendChild(option);
     });
 
-    currentPeriodId = dashboardData.meta.default_period_id;
+    currentPeriodId = defaultId;
     selector.value = currentPeriodId;
 
     selector.addEventListener('change', (e) => {
+        const selectedOption = e.target.selectedOptions[0];
+        if (selectedOption && selectedOption.dataset.incomplete === 'true') {
+            alert("Atención: El periodo seleccionado aún cuenta con datos incompletos. Las variaciones y proyecciones pueden cambiar significativamente hasta el cierre definitivo.");
+        }
         currentPeriodId = e.target.value;
         updateDashboard();
     });
@@ -193,9 +210,15 @@ function renderKPIs(kpi) {
 
         // kpi-real-var
         const realVarEl = document.getElementById('kpi-real-var');
-        realVarEl.textContent = formatPercentage(kpi.var_real_ia);
-        realVarEl.className = `kpi-value ${kpi.var_real_ia >= 0 ? 'text-success' : 'text-danger'}`;
-        document.getElementById('label-real-period').textContent = 'Variación i.a. Deflactada';
+        if (kpi.var_real_ia === null || kpi.var_real_ia === undefined) {
+            realVarEl.textContent = 'Sin datos';
+            realVarEl.className = 'kpi-value text-secondary';
+            document.getElementById('label-real-period').textContent = '-';
+        } else {
+            realVarEl.textContent = formatPercentage(kpi.var_real_ia);
+            realVarEl.className = `kpi-value ${kpi.var_real_ia >= 0 ? 'text-success' : 'text-danger'}`;
+            document.getElementById('label-real-period').textContent = 'Variación i.a. Deflactada';
+        }
     }
 
     // Update Header Period

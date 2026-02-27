@@ -157,18 +157,33 @@ document.addEventListener('DOMContentLoaded', () => {
             // Setup selector
             const selector = document.getElementById('monthSelector');
             if (selector && mainData.meta.available_periods) {
+                const defaultIndex = mainData.meta.available_periods.findIndex(p => p.id === mainData.meta.default_period_id);
+
                 // Populate options (newest first)
                 const reversedPeriods = [...mainData.meta.available_periods].reverse();
                 reversedPeriods.forEach(p => {
                     const option = document.createElement('option');
                     option.value = p.id;
                     option.textContent = `${p.label} ${p.year}`;
+
+                    // Highlight months beyond the default (incomplete)
+                    const pIndex = mainData.meta.available_periods.findIndex(per => per.id === p.id);
+                    if (pIndex > defaultIndex) {
+                        option.style.color = '#ef4444'; // Red-500
+                        option.dataset.incomplete = 'true';
+                        option.textContent += ' (Incompleto)';
+                    }
+
                     if (p.id === currentPeriodId) option.selected = true;
                     selector.appendChild(option);
                 });
 
                 // Add event listener
                 selector.addEventListener('change', (e) => {
+                    const selectedOption = e.target.selectedOptions[0];
+                    if (selectedOption && selectedOption.dataset.incomplete === 'true') {
+                        alert("Atención: El periodo seleccionado aún cuenta con datos incompletos. Las variaciones y proyecciones pueden cambiar significativamente hasta el cierre definitivo.");
+                    }
                     currentPeriodId = e.target.value;
                     renderKPIs(mainData, personalData, currentPeriodId);
                     renderCoverageChart(mainData, currentPeriodId);
@@ -271,7 +286,7 @@ function renderKPIs(mainData, personalData, currentPeriodId) {
     const el = document.getElementById('kpi-cbt-ratio');
     if (el) {
         if (kpiCbtRatio === null || kpiCbtRatio === undefined) {
-            el.textContent = '--';
+            el.textContent = 'Sin datos';
             el.className = 'kpi-value text-secondary';
         } else {
             el.textContent = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(kpiCbtRatio);
@@ -285,7 +300,7 @@ function updateKPI(elementId, value, useColor = true, isCoverage = false) {
     if (!el) return;
 
     if (value === null || value === undefined) {
-        el.textContent = '--';
+        el.textContent = 'Sin datos';
         return;
     }
 
@@ -423,7 +438,7 @@ function renderPurchasingPowerChart(mainData) {
         data: {
             labels: labels,
             datasets: [{
-                label: 'Salarios Promedio / CBT NEA',
+                label: 'Salarios Promedio / CBT Digital',
                 data: values,
                 backgroundColor: '#0ea5e9', // Sky Blue
                 borderWidth: 0,
@@ -565,18 +580,8 @@ function renderCoverageChart(mainData, periodId) {
                 tooltip: {
                     callbacks: {
                         label: function (context) {
-                            const datasetIndex = context.datasetIndex;
-                            const dataIndex = context.dataIndex;
                             const pctVal = context.raw.toFixed(1);
-
-                            let rawVal = 0;
-                            if (datasetIndex === 0) {
-                                rawVal = rawMasaData[dataIndex];
-                            } else {
-                                rawVal = rawRestoData[dataIndex];
-                            }
-
-                            return `${context.dataset.label}: ${pctVal}% ($${Math.round(rawVal / 1000000).toLocaleString('es-AR')}M)`;
+                            return `${context.dataset.label}: ${pctVal}%`;
                         }
                     }
                 }

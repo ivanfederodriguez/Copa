@@ -107,29 +107,46 @@ function initMonthSelector(periods) {
     // Clear loading option
     selector.innerHTML = '';
 
+    // Index of the last complete month
+    const defaultId = dashboardData.meta.default_period_id;
+    const defaultIndex = periods.findIndex(p => p.id === defaultId);
+
     // Populate options (newest first)
     const reversedPeriods = [...periods].reverse();
     reversedPeriods.forEach(period => {
         const option = document.createElement('option');
         option.value = period.id;
         option.textContent = period.label + ' ' + period.year;
+
+        // Highlight months beyond the default
+        const pIndex = periods.findIndex(p => p.id === period.id);
+        if (pIndex > defaultIndex) {
+            option.style.color = '#ef4444';
+            option.dataset.incomplete = 'true';
+            option.textContent += ' (Incompleto)';
+        }
+
         selector.appendChild(option);
     });
 
     // Select default period
     // Priority: meta.default_period_id > last available period
-    let defaultId = dashboardData.meta.default_period_id;
-    if (!defaultId && periods.length > 0) {
-        defaultId = periods[periods.length - 1].id;
+    let chosenId = defaultId;
+    if (!chosenId && periods.length > 0) {
+        chosenId = periods[periods.length - 1].id;
     }
 
-    selector.value = defaultId;
+    selector.value = chosenId;
 
     // Render initial data
-    renderDashboard(defaultId);
+    renderDashboard(chosenId);
 
     // Handle changes
     selector.addEventListener('change', (e) => {
+        const selectedOption = e.target.selectedOptions[0];
+        if (selectedOption && selectedOption.dataset.incomplete === 'true') {
+            alert("Atención: El periodo seleccionado aún cuenta con datos incompletos. Las variaciones y proyecciones pueden cambiar significativamente hasta el cierre definitivo.");
+        }
         renderDashboard(e.target.value);
     });
 }
@@ -185,10 +202,11 @@ function renderDashboard(periodId) {
 
     // Update Chart Title
     const chartTitle = document.getElementById('chart-title');
-    if (chartTitle) chartTitle.textContent = `Comportamiento Diario ${monthName}`;
+    if (chartTitle) chartTitle.textContent = `Comportamiento de Coparticipación Diaria ${monthName}`;
 
     // Update Chart
     renderChart(periodData.charts.daily, monthName, currentYear, prevYear);
+    renderBrechaChart(periodData.charts.copa_vs_salario, monthName, currentYear);
     renderCopaVsSalarioChart(periodData.charts.copa_vs_salario);
 }
 
@@ -414,6 +432,12 @@ function renderCopaVsSalarioChart(dataCopa) {
     const ctx = document.getElementById('chartCopaVsSalario');
     if (!ctx) return;
 
+    // Update Title dynamically
+    const titleEl = document.getElementById('copaVsSalarioTitle');
+    if (titleEl && dataCopa && dataCopa.copa_label && dataCopa.salario_label) {
+        titleEl.textContent = `Coparticipación ${dataCopa.copa_label} vs Sueldos ${dataCopa.salario_label}`;
+    }
+
     if (chartCopaInstance) {
         chartCopaInstance.destroy();
     }
@@ -498,6 +522,167 @@ function renderCopaVsSalarioChart(dataCopa) {
                     }
                 },
                 x: {
+                    grid: { display: false },
+                    ticks: { font: { size: 11 } }
+                }
+            }
+        }
+    });
+}
+
+let chartBrechaInstance = null;
+
+function renderBrechaChart(dataCopa, monthName, currentYear) {
+    const ctx = document.getElementById('chartBrechaAcumulada');
+    if (!ctx) return;
+
+    if (chartBrechaInstance) {
+        chartBrechaInstance.destroy();
+    }
+
+    if (!dataCopa || !dataCopa.cumulative_esperada || !dataCopa.cumulative_copa) return;
+
+    const colorActual = '#10b981'; // Green from existing platform (e.g. cumulative actuals)
+    const colorFaltante = '#94a3b8'; // Slate Gray from existing platform (e.g. previous year)
+    const colorExcedente = '#047857'; // Darker green for exceeding EXPECTED
+
+    const expectedData = dataCopa.cumulative_esperada;
+    const actualDataRaw = dataCopa.cumulative_copa;
+
+    // Process data for stacked bars
+    const baseData = [];
+    const faltanteData = [];
+    const excedenteData = [];
+
+    for (let i = 0; i < expectedData.length; i++) {
+        const exp = expectedData[i];
+        const act = actualDataRaw[i];
+
+        if (exp === null || act === null) {
+            baseData.push(null);
+            faltanteData.push(null);
+            excedenteData.push(null);
+        } else {
+            if (act <= exp) {
+                baseData.push(act); // Efectiva is entirely within expected
+                faltanteData.push(exp - act); // The missing gap
+                excedenteData.push(0);
+            } else {
+                baseData.push(exp); // Cap base at expected
+                faltanteData.push(0);
+                excedenteData.push(act - exp); // The surplus
+            }
+        }
+    }
+
+    chartBrechaInstance = new Chart(ctx.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: dataCopa.labels,
+            datasets: [
+                {
+                    label: `Recaudación Ingresada`,
+                    data: baseData,
+                    backgroundColor: 'rgba(16, 185, 129, 0.85)', // Green
+                    borderColor: colorActual,
+                    borderWidth: 1,
+                    borderRadius: 4
+                },
+                {
+                    label: `Faltante`,
+                    data: faltanteData,
+                    backgroundColor: 'rgba(148, 163, 184, 0.7)', // Slate gray
+                    borderColor: colorFaltante,
+                    borderWidth: 1,
+                    borderRadius: 4
+                },
+                {
+                    label: `Excedente`,
+                    data: excedenteData,
+                    backgroundColor: 'rgba(4, 120, 87, 0.8)',
+                    borderColor: colorExcedente,
+                    borderWidth: 1,
+                    borderRadius: 4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20,
+                        font: { size: 12, weight: '600' },
+                        filter: function (item, chart) {
+                            return item.text !== 'Excedente'; // Hide surplus from legend usually
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    titleColor: '#1e293b',
+                    bodyColor: '#475569',
+                    borderColor: 'rgba(0,0,0,0.1)',
+                    borderWidth: 1,
+                    padding: 12,
+                    displayColors: true,
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        afterBody: function (tooltipItems) {
+                            const index = tooltipItems[0].dataIndex;
+                            const exp = expectedData[index];
+                            const act = actualDataRaw[index];
+
+                            if (exp > 0 && act > 0) {
+                                const diff = act - exp;
+                                const missingPercentage = ((exp - act) / exp) * 100;
+
+                                let pctText = "";
+                                if (missingPercentage > 0) {
+                                    pctText = `Porcentaje Faltante: ${missingPercentage.toFixed(1)}%`;
+                                } else {
+                                    pctText = `Superávit: ${Math.abs(missingPercentage).toFixed(1)}%`;
+                                }
+
+                                return [
+                                    ``,
+                                    `━━━━━━━━━━━━━━━━━━━━`,
+                                    `Esperada (100%): $${new Intl.NumberFormat('es-AR').format(Math.round(exp))} M`,
+                                    `Diferencia Neta: ${diff > 0 ? '+' : ''}$${new Intl.NumberFormat('es-AR').format(Math.round(diff))} M`,
+                                    pctText
+                                ];
+                            }
+                        },
+                        label: function (context) {
+                            if (context.parsed.y !== null && context.parsed.y > 0) {
+                                return `${context.dataset.label}: $${new Intl.NumberFormat('es-AR').format(Math.round(context.parsed.y))} M`;
+                            }
+                            return null;
+                        }
+                    }
+                }
+            },
+            interaction: {
+                mode: 'index',
+                axis: 'x',
+                intersect: false
+            },
+            scales: {
+                y: {
+                    stacked: true,
+                    grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false },
+                    ticks: {
+                        font: { size: 11 },
+                        color: '#64748b',
+                        callback: (value) => '$' + new Intl.NumberFormat('es-AR').format(Math.round(value)) + ' M'
+                    }
+                },
+                x: {
+                    stacked: true,
                     grid: { display: false },
                     ticks: { font: { size: 11 } }
                 }

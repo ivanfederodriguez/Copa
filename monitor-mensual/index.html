@@ -141,7 +141,9 @@
             <section class="hero-grid">
                 <article class="kpi-card">
                     <div class="info-tooltip"
-                        data-tooltip="Masa salarial total, en millones de pesos corrientes, para el periodo seleccionado.">
+                        data-tooltip="Muestra la masa salarial total liquidada, en pesos corrientes, correspondiente al período seleccionado.
+
+El indicador representa la suma total de los salarios abonados en dicho período, expresados en valores nominales, es decir, sin ajuste por inflación.">
                         ?</div>
                     <div class="kpi-label" id="label-masa-current">Masa Salarial Enero 2026</div>
                     <div class="kpi-value" id="kpi-masa-current">Loading...</div>
@@ -154,7 +156,9 @@
 
                 <article class="kpi-card">
                     <div class="info-tooltip"
-                        data-tooltip="Masa salarial total, en millones de pesos corrientes, para el mismo periodo del año anterior al seleccionado.">
+                        data-tooltip="Masa salarial total liquidada, en pesos corrientes, para el mismo periodo del año anterior al seleccionado.
+
+El indicador representa la suma total de los salarios abonados en dicho período, expresados en valores nominales, es decir, sin ajuste por inflación.">
                         ?</div>
                     <div class="kpi-label" id="label-masa-prev">Masa Salarial Enero 2025</div>
                     <div class="kpi-value" style="color: var(--text-secondary);" id="kpi-masa-prev">Loading...</div>
@@ -165,7 +169,9 @@
 
                 <article class="kpi-card">
                     <div class="info-tooltip"
-                        data-tooltip="Muestra la variación porcentual interanual de la masa salarial total en términos nominales del periodo seleccionado respecto al mismo periodo del año anterior.">
+                        data-tooltip="Muestra la variación porcentual interanual de la masa salarial total liquidada en términos nominales del período seleccionado respecto al mismo período del año anterior.
+
+El indicador compara el monto total de salarios liquidados en el período elegido con el registrado en el mismo período del año previo, sin realizar ajustes por inflación. De esta manera, refleja el crecimiento o la disminución de la masa salarial en valores corrientes.">
                         ?</div>
                     <div class="kpi-label">Variación Nominal</div>
                     <div class="kpi-value" id="kpi-masa-var-nom-pct">--%</div>
@@ -177,7 +183,8 @@
 
                 <article class="kpi-card">
                     <div class="info-tooltip"
-                        data-tooltip="Muestra la variación porcentual interanual de la masa salarial total en términos reales  del periodo seleccionado respecto al mismo periodo del año anterior. La masa salarial se deflacta por el IPC del NEA.">
+                        data-tooltip="Muestra la variación porcentual interanual de la masa salarial total liquidada en términos reales del período seleccionado respecto al mismo período del año anterior.
+Para ello, la masa salarial liquidada se ajusta por inflación utilizando el IPC del NEA, con el objetivo de obtener su valor real. Luego se compara el período seleccionado con el mismo período del año previo. De esta manera, el indicador permite analizar la evolución de la masa salarial en términos de poder adquisitivo.">
                         ?</div>
                     <div class="kpi-label">Variación Real</div>
                     <div class="kpi-value" id="kpi-masa-var-real">--%</div>
@@ -192,14 +199,33 @@
                 Fuente: SISPER</p>
 
 
-            <!-- Chart Section -->
+            <!-- Copa vs Sueldos Chart Section -->
             <section class="chart-container">
+                <div class="info-tooltip"
+                    data-tooltip="Comparación de la recaudación acumulada diaria de coparticipación frente al monto objetivo para el pago de salarios del mes (o mes anterior disponible).">
+                    ?</div>
+                <div class="section-header">
+                    <div>
+                        <h2 class="section-title" id="copaVsSalarioTitle">Coparticipación vs Sueldos</h2>
+                        <p class="section-subtitle">¿Cuántos días de recaudación cubren la masa salarial?</p>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="chartCopaVsSalario"></canvas>
+                </div>
+                <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 1rem; text-align: left;">
+                    Fuente: Ministerio de Economía y Administración (Coparticipación) / SISPER (Salarios)
+                </p>
+            </section>
+
+            <!-- Daily Chart Section -->
+            <section class="chart-container" style="margin-top: 4rem; margin-bottom: 4rem;">
                 <div class="info-tooltip"
                     data-tooltip="Comparación de la evolución de los ingresos diarios de la coparticipación en millones de pesos en términos nominales para el periodo actual seleccionado y el mismo periodo del año anterior.">
                     ?</div>
                 <div class="section-header">
                     <div>
-                        <h2 class="section-title" id="chart-title">Comportamiento Diario Enero</h2>
+                        <h2 class="section-title" id="chart-title">Comportamiento de Coparticipación Diaria</h2>
                         <p class="section-subtitle">Comparativa de ingresos diarios nominales (Millones de pesos)</p>
                     </div>
                     <!-- Controls could go here -->
@@ -211,21 +237,22 @@
                     INDEC y Ministerio de Economía de la Nación</p>
             </section>
 
+            <!-- Gap Chart Section -->
             <section class="chart-container" style="margin-top: 4rem; margin-bottom: 4rem;">
                 <div class="info-tooltip"
-                    data-tooltip="Comparación de la recaudación acumulada diaria de coparticipación frente al monto objetivo para el pago de salarios del mes (o mes anterior disponible).">
+                    data-tooltip="Comparación acumulada entre los ingresos observados frente a la recaudación que debería haber ingresado (Esperada = 100%).">
                     ?</div>
                 <div class="section-header">
                     <div>
-                        <h2 class="section-title">Coparticipación vs Sueldos</h2>
-                        <p class="section-subtitle">¿Cuántos días de recaudación cubren la masa salarial?</p>
+                        <h2 class="section-title">Brecha Recaudación Acumulada</h2>
+                        <p class="section-subtitle">Efectiva vs Esperada</p>
                     </div>
                 </div>
                 <div class="chart-wrapper">
-                    <canvas id="chartCopaVsSalario"></canvas>
+                    <canvas id="chartBrechaAcumulada"></canvas>
                 </div>
                 <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 1rem; text-align: left;">
-                    Fuente: Ministerio de Economía y Administración (Coparticipación) / SISPER (Salarios)
+                    Fuente: Ministerio de Economía y Administración
                 </p>
             </section>
 

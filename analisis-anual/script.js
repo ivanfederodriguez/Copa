@@ -166,7 +166,9 @@ function renderAnnualDashboard() {
     // 1. Current Year Card
     const cardCurrent = `
         <article class="kpi-card">
-            <div class="info-tooltip" data-tooltip="Monto total anual, en billones de pesos corrientes, de los ingresos por coparticipación del periodo seleccionado. El valor real se obtuvo deflactando por el IPC del NEA.">?</div>
+            <div class="info-tooltip" data-tooltip="Monto total, en pesos corrientes, de los ingresos provinciales por coparticipación para el periodo actual seleccionado.
+
+El valor de coparticipación incluye la suma de los conceptos de: C.F.I. Neta de Ley N° N° 26.075, Financ. Educativo Ley N° 26.075, Reg.Simplif. p/Pequeños Contribuyentes Ley Nº 24.977 y Compensación Consenso Fiscal.">?</div>
             <div class="kpi-label">Año ${currentYear.year}</div>
             <div class="kpi-value text-xl">${formatCurrency(currentYear.nominal)}</div>
             <div class="kpi-sub">
@@ -178,7 +180,9 @@ function renderAnnualDashboard() {
     // 2. Prev Year Card
     const cardPrev = `
         <article class="kpi-card">
-            <div class="info-tooltip" data-tooltip="Monto total anual, en billones de pesos corrientes, de los ingresos por coparticipación del año anterior al periodo seleccionado. El valor real se obtuvo deflactando por el IPC del NEA.">?</div>
+            <div class="info-tooltip" data-tooltip="Monto total, en pesos corrientes, de los ingresos provinciales por coparticipación para el mismo periodo del año anterior al seleccionado.
+
+El valor de coparticipación incluye la suma de los conceptos de: C.F.I. Neta de Ley N° N° 26.075, Financ. Educativo Ley N° 26.075, Reg.Simplif. p/Pequeños Contribuyentes Ley Nº 24.977 y Compensación Consenso Fiscal.">?</div>
             <div class="kpi-label">Año ${prevYear.year}</div>
             <div class="kpi-value text-xl" style="color: var(--text-secondary);">${formatCurrency(prevYear.nominal)}</div>
             <div class="kpi-sub">
@@ -193,7 +197,11 @@ function renderAnnualDashboard() {
 
     const cardVarNom = `
         <article class="kpi-card">
-            <div class="info-tooltip" data-tooltip="Muestra la variación absoluta, en miles de millones de pesos corrientes, entre los ingresos anuales totales por coparticipación del período seleccionado y los del año anterior.">?</div>
+            <div class="info-tooltip" data-tooltip="Muestra la variación porcentual interanual de los ingresos provinciales por coparticipación en términos nominales del período seleccionado respecto al mismo período del año anterior.
+
+El indicador compara el monto percibido en el período elegido con el registrado en el mismo período del año previo, sin realizar ajustes por inflación. De esta manera, refleja el crecimiento o la disminución de los recursos en valores corrientes. 
+
+El valor de coparticipación incluye la suma de los conceptos de: C.F.I. Neta de Ley N° N° 26.075, Financ. Educativo Ley N° 26.075, Reg.Simplif. p/Pequeños Contribuyentes Ley Nº 24.977 y Compensación Consenso Fiscal..">?</div>
             <div class="kpi-label">Variación Nominal</div>
             <div class="kpi-value ${varNom >= 0 ? 'text-success' : 'text-danger'}">
                 ${varNom >= 0 ? '+' : ''}${formatCurrency(diffNom).replace('Billones', 'B').replace('Mil Millones', 'MM').replace('Mil M', 'MM')}
@@ -211,7 +219,11 @@ function renderAnnualDashboard() {
 
     const cardVarReal = `
         <article class="kpi-card">
-            <div class="info-tooltip" data-tooltip="Muestra la variación absoluta, en millones de pesos en términos reales, entre los ingresos anuales totales por coparticipación del período seleccionado y los del año anterior. Los montos reales se obtuvieron deflactando con el IPC del NEA.">?</div>
+            <div class="info-tooltip" data-tooltip="Muestra la variación porcentual interanual de la coparticipación en términos reales del período seleccionado respecto al mismo período del año anterior. 
+
+Para ello, primero se ajustan (deflactan) los ingresos provenientes de la coparticipación utilizando el IPC del NEA, con el objetivo de eliminar el efecto de la inflación. Luego, se calcula la variación entre el período elegido y el mismo período del año anterior. De esta manera, el indicador refleja si hubo un aumento o una disminución en el poder de compra de esos recursos.
+
+El valor de coparticipación incluye la suma de los conceptos de: C.F.I. Neta de Ley N° N° 26.075, Financ. Educativo Ley N° 26.075, Reg.Simplif. p/Pequeños Contribuyentes Ley Nº 24.977 y Compensación Consenso Fiscal.">?</div>
             <div class="kpi-label">Variación Real</div>
             <div class="kpi-value ${varReal >= 0 ? 'text-success' : 'text-danger'}">
                 ${varReal >= 0 ? '+' : ''}${formatCurrency(diffReal).replace('Billones', 'B').replace('Mil Millones', 'MM').replace('Mil M', 'MM')}
