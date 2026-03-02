@@ -83,10 +83,14 @@
                     <div class="info-tooltip"
                         data-tooltip="Monto total, en millones de pesos corrientes, de los ingresos por coparticipación para el periodo actual seleccionado.">
                         ?</div>
-                    <div class="kpi-label" id="label-recaudacion-current">Recaudación Enero 2026</div>
+                    <div class="kpi-label" id="label-recaudacion-current">Copa. Disponible Enero 2026</div>
                     <div class="kpi-value" id="kpi-recaudacion-current">Loading...</div>
-                    <div class="kpi-sub">
-                        <span>Acumulado Mensual</span>
+                    <div class="kpi-sub"
+                        style="display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 4px; font-size: 0.85rem;">
+                        <span style="color: var(--text-secondary);">Copa. Neta: <strong
+                                id="kpi-neta-current">--</strong></span>
+                        <span style="color: var(--text-secondary);">Copa. Bruta: <strong
+                                id="kpi-bruta-current">--</strong></span>
                     </div>
                 </article>
 
@@ -94,11 +98,13 @@
                     <div class="info-tooltip"
                         data-tooltip="Monto total, en millones de pesos corrientes, de los ingresos por coparticipación para el mismo periodo del año anterior al seleccionado.">
                         ?</div>
-                    <div class="kpi-label" id="label-recaudacion-prev">Recaudación Enero 2025</div>
+                    <div class="kpi-label" id="label-recaudacion-prev">Copa. Disponible Enero 2025</div>
                     <div class="kpi-value" style="color: var(--text-secondary);" id="kpi-recaudacion-prev">Loading...
                     </div>
-                    <div class="kpi-sub" style="color: var(--text-secondary);">
-                        <span>Periodo Anterior</span>
+                    <div class="kpi-sub"
+                        style="display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 4px; font-size: 0.85rem; color: var(--text-secondary);">
+                        <span>Copa. Neta: <strong id="kpi-neta-prev">--</strong></span>
+                        <span>Copa. Bruta: <strong id="kpi-bruta-prev">--</strong></span>
                     </div>
                 </article>
 

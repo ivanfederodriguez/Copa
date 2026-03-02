@@ -182,10 +182,10 @@ function renderDashboard(periodId) {
 
     // Update Recaudación Labels
     const lblRecCurrent = document.getElementById('label-recaudacion-current');
-    if (lblRecCurrent) lblRecCurrent.textContent = `Recaudación ${monthName} ${currentYear}`;
+    if (lblRecCurrent) lblRecCurrent.textContent = `Copa. Disponible ${monthName} ${currentYear}`;
 
     const lblRecPrev = document.getElementById('label-recaudacion-prev');
-    if (lblRecPrev) lblRecPrev.textContent = `Recaudación ${monthName} ${prevYear}`;
+    if (lblRecPrev) lblRecPrev.textContent = `Copa. Disponible ${monthName} ${prevYear}`;
 
     // Update Masa Salarial Subtitle
     const masaSubtitle = document.getElementById('masa-salarial-subtitle');
@@ -228,14 +228,26 @@ function formatPercentage(value) {
 }
 
 function renderKPIs(kpi) {
+    // Apply 19% reduction (multiply by 0.81) to Recaudación values
+    const factor = 0.81;
+    const currentNet = kpi.recaudacion.current * factor;
+    const prevNet = kpi.recaudacion.prev * factor;
+    const diffNomNet = kpi.recaudacion.diff_nom * factor;
+
     // --- Recaudación ---
-    document.getElementById('kpi-recaudacion-current').textContent = formatMillions(kpi.recaudacion.current);
-    document.getElementById('kpi-recaudacion-prev').textContent = formatMillions(kpi.recaudacion.prev);
+    document.getElementById('kpi-recaudacion-current').textContent = formatMillions(currentNet);
+    document.getElementById('kpi-recaudacion-prev').textContent = formatMillions(prevNet);
+
+    // Neta and Bruta labels
+    document.getElementById('kpi-neta-current').textContent = formatMillions(kpi.recaudacion.neta_current);
+    document.getElementById('kpi-neta-prev').textContent = formatMillions(kpi.recaudacion.neta_prev);
+    document.getElementById('kpi-bruta-current').textContent = formatMillions(kpi.recaudacion.bruta_current);
+    document.getElementById('kpi-bruta-prev').textContent = formatMillions(kpi.recaudacion.bruta_prev);
 
     // Var Nominal
     const recVarNomEl = document.getElementById('kpi-recaudacion-var-nom-abs');
-    const diffSign = kpi.recaudacion.diff_nom >= 0 ? '+' : '-';
-    recVarNomEl.textContent = diffSign + formatMillions(Math.abs(kpi.recaudacion.diff_nom));
+    const diffSign = diffNomNet >= 0 ? '+' : '-';
+    recVarNomEl.textContent = diffSign + formatMillions(Math.abs(diffNomNet));
 
     const recVarNomSub = document.getElementById('kpi-recaudacion-var-nom-pct');
     const pctSign = kpi.recaudacion.var_nom >= 0 ? '+' : '-';
@@ -259,10 +271,10 @@ function renderKPIs(kpi) {
         const inflacionPct = kpi.recaudacion.ipc_used_for_calc / 100;
 
         // Update the previous collection to today's money equivalent
-        const prevAjustado = kpi.recaudacion.prev * (1 + inflacionPct);
+        const prevAjustado = prevNet * (1 + inflacionPct);
 
         // The real diff is the current collection minus the adjusted previous collection
-        const diffReal = kpi.recaudacion.current - prevAjustado;
+        const diffReal = currentNet - prevAjustado;
 
         if (recVarRealAbsEl) {
             const diffRealSign = diffReal >= 0 ? '+' : '-';
@@ -352,6 +364,11 @@ function renderChart(dailyData, monthName, currentYear, prevYear) {
     gradient2026.addColorStop(0, 'rgba(16, 185, 129, 0.9)');
     gradient2026.addColorStop(1, 'rgba(16, 185, 129, 0.4)');
 
+    // Apply 19% reduction to daily data
+    const factor = 0.81;
+    const dataCurrNet = dailyData.data_curr.map(val => val !== null ? val * factor : null);
+    const dataPrevNet = dailyData.data_prev_nom.map(val => val !== null ? val * factor : null);
+
     dailyChartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -359,7 +376,7 @@ function renderChart(dailyData, monthName, currentYear, prevYear) {
             datasets: [
                 {
                     label: `${monthName} ${currentYear}`,
-                    data: dailyData.data_curr,
+                    data: dataCurrNet,
                     backgroundColor: gradient2026,
                     borderRadius: 4,
                     borderSkipped: false,
@@ -367,7 +384,7 @@ function renderChart(dailyData, monthName, currentYear, prevYear) {
                 },
                 {
                     label: `${monthName} ${prevYear}`,
-                    data: dailyData.data_prev_nom,
+                    data: dataPrevNet,
                     backgroundColor: '#94a3b8', // Slate Gray (consistent with other dashboards)
                     borderRadius: 4,
                     borderSkipped: false,
@@ -447,6 +464,10 @@ function renderCopaVsSalarioChart(dataCopa) {
     const colorPrimary = '#10b981';
     const colorAccent = '#af2f2f';
 
+    // Apply 19% reduction to cumulative_copa
+    const factor = 0.81;
+    const cumulativeCopaNet = dataCopa.cumulative_copa.map(val => val !== null ? val * factor : null);
+
     chartCopaInstance = new Chart(ctx.getContext('2d'), {
         type: 'bar',
         data: {
@@ -466,7 +487,7 @@ function renderCopaVsSalarioChart(dataCopa) {
                 {
                     type: 'bar',
                     label: 'Coparticipación Acumulada',
-                    data: dataCopa.cumulative_copa,
+                    data: cumulativeCopaNet,
                     backgroundColor: 'rgba(16, 185, 129, 0.8)',
                     borderColor: colorPrimary,
                     borderWidth: 1,

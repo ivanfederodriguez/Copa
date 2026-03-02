@@ -489,8 +489,10 @@ function renderCoverageChart(mainData, periodId) {
 
     const labels = [];
     const masaSalarialPctData = [];
+    const municipiosPctData = [];
     const restoCopaPctData = [];
     const rawMasaData = [];
+    const rawMunicipiosData = [];
     const rawRestoData = [];
 
     // Calcular porcentajes para cada mes seleccionado
@@ -508,26 +510,31 @@ function renderCoverageChart(mainData, periodId) {
 
         let masaSalarial = masaSalarialM * 1000000;
         let recaudacionTotal = recaudacionTotalM * 1000000;
-        let restoCopa = Math.max(0, recaudacionTotal - masaSalarial);
+        let municipios = recaudacionTotal * 0.19;
+        let restoCopa = Math.max(0, recaudacionTotal - masaSalarial - municipios);
 
         if (isMasaIncomplete || masaSalarial === 0) {
             masaSalarial = 0;
-            restoCopa = recaudacionTotal;
+            restoCopa = recaudacionTotal - municipios;
         }
 
-        const total = masaSalarial + restoCopa;
+        const total = masaSalarial + municipios + restoCopa;
         let masaPct = 0;
+        let municipiosPct = 0;
         let restoPct = 0;
 
         if (total > 0) {
             masaPct = (masaSalarial / total) * 100;
+            municipiosPct = (municipios / total) * 100;
             restoPct = (restoCopa / total) * 100;
         }
 
         masaSalarialPctData.push(masaPct);
+        municipiosPctData.push(municipiosPct);
         restoCopaPctData.push(restoPct);
 
         rawMasaData.push(masaSalarial);
+        rawMunicipiosData.push(municipios);
         rawRestoData.push(restoCopa);
     });
 
@@ -557,6 +564,13 @@ function renderCoverageChart(mainData, periodId) {
                     label: 'Masa Salarial',
                     data: masaSalarialPctData,
                     backgroundColor: '#10b981', // green
+                    borderWidth: 0,
+                    barPercentage: 0.6
+                },
+                {
+                    label: 'Municipios',
+                    data: municipiosPctData,
+                    backgroundColor: '#fdba74', // pastel orange (orange-300)
                     borderWidth: 0,
                     barPercentage: 0.6
                 },
