@@ -38,7 +38,8 @@
 
         <nav class="nav-vertical">
             <a href="../main/index.html" class="nav-link-vertical">Inicio</a>
-            <a href="../monitor-mensual/index.html" class="nav-link-vertical active">Monitor Mensual Coparticipación</a>
+            <a href="../monitor-mensual/index.html" class="nav-link-vertical active">Análisis Mensual
+                Coparticipación</a>
             <a href="../analisis-anual/index.html" class="nav-link-vertical">Análisis Anual Coparticipación</a>
             <a href="../analisis-personal/index.html" class="nav-link-vertical" style="display: none;">Análisis
                 Salarial</a>
@@ -131,7 +132,7 @@ La coparticipacion neta incluye la suma de los conceptos de: C.F.I. Neta de Ley 
 
 La coparticipación bruta incluye el total recibido en términos de coparticipación, es decir los conceptos integrados en coparticipación neta y aquellos que tienen afectacion específica.">
                         ?</div>
-                    <div class="kpi-label">Variación Nominal</div>
+                    <div class="kpi-label">Variación Nominal Coparticipación</div>
                     <div class="kpi-value text-success" id="kpi-recaudacion-var-nom-pct">--%</div>
                     <div class="kpi-sub">
                         <span style="font-weight: 700;" id="kpi-recaudacion-var-nom-abs">--</span>
@@ -149,7 +150,7 @@ La coparticipacion neta incluye la suma de los conceptos de: C.F.I. Neta de Ley 
 
 La coparticipación bruta incluye el total recibido en términos de coparticipación, es decir los conceptos integrados en coparticipación neta y aquellos que tienen afectacion específica.">
                         ?</div>
-                    <div class="kpi-label">Variación Real</div>
+                    <div class="kpi-label">Variación Real Coparticipación</div>
                     <div class="kpi-value" id="real-var-val">--%</div>
                     <div class="kpi-sub">
                         <span style="font-weight: 700;" id="real-var-abs">--</span>
@@ -160,6 +161,51 @@ La coparticipación bruta incluye el total recibido en términos de coparticipac
             <p
                 style="color: var(--text-secondary); font-size: 0.8rem; margin-top: -3rem; margin-bottom: 4rem; text-align: left; padding-left: 10px;">
                 Fuente: INDEC y Ministerio de Economía de la Nación</p>
+
+            <!-- Presupuesto vs Real Section (Only 2026) -->
+            <div id="presupuesto-section" style="display: none;">
+                <div class="header-content" style="text-align: left; margin-top: 2rem; margin-bottom: 2rem;">
+                    <h2 style="font-size: var(--text-2xl); margin-bottom: 0.5rem;"
+                        class="text-gradient dashboard-title">Desempeño Frente a Presupuesto</h2>
+                    <p style="color: var(--text-secondary); font-size: var(--text-base);">
+                        Análisis comparativo de la coparticipación neta efectiva frente a los fondos presupuestados para
+                        el mes seleccionado.
+                    </p>
+                </div>
+
+                <section class="hero-grid"
+                    style="grid-template-columns: repeat(2, 1fr) !important; margin-bottom: 2rem;">
+                    <article class="kpi-card" style="height: auto;">
+                        <div class="info-tooltip"
+                            data-tooltip="Muestra la diferencia nominal en millones de pesos entre lo que la provincia esperaba recibir (según el Presupuesto 2026) y lo que efectivamente percibió (Coparticipación Neta). Valores positivos indican excedente de ingresos, valores negativos representan faltantes.">
+                            ?</div>
+                        <div class="kpi-label">Diferencia Nominal (Neta vs Presupuestada)</div>
+                        <div class="kpi-value" id="kpi-brecha-nom">--</div>
+                        <div class="kpi-sub" style="display: flex; gap: 8px; font-size: 0.85rem; flex-wrap: wrap;">
+                            <span style="color: var(--text-secondary);">Recaudado: <strong id="kpi-neta-presupuesto"
+                                    style="color: #0f172a;">--</strong></span>
+                            <span style="color: var(--text-secondary);">Presupuestado: <strong id="kpi-esperada"
+                                    style="color: #0f172a;">--</strong></span>
+                        </div>
+                    </article>
+
+                    <article class="kpi-card" style="height: auto;">
+                        <div class="info-tooltip"
+                            data-tooltip="Refleja qué porcentaje del presupuesto esperado para el mes fue efectivamente cubierto por la recaudación neta real. Valores por debajo pueden comprometer la planificación financiera mensual.">
+                            ?</div>
+                        <div class="kpi-label">Diferencia Porcentual (Cumplimiento)</div>
+                        <div class="kpi-value" id="kpi-brecha-pct">--%</div>
+                        <div class="kpi-sub">
+                            <span style="color: var(--text-secondary); margin-left: 5px;">Brecha Porcentual respecto al
+                                monto presupuestado</span>
+                        </div>
+                    </article>
+                </section>
+                <p
+                    style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 4rem; text-align: left; padding-left: 10px;">
+                    Fuente: Ministerio de Economía y Administración
+                </p>
+            </div>
 
             <div class="header-content" style="text-align: left; margin-top: 4rem; margin-bottom: 2rem;">
                 <h2 style="font-size: 1.75rem; margin-bottom: 0.5rem;" class="text-gradient dashboard-title">Masa
@@ -204,7 +250,7 @@ El indicador representa la suma total de los salarios abonados en dicho período
 
 El indicador compara el monto total de salarios liquidados en el período elegido con el registrado en el mismo período del año previo, sin realizar ajustes por inflación. De esta manera, refleja el crecimiento o la disminución de la masa salarial en valores corrientes.">
                         ?</div>
-                    <div class="kpi-label">Variación Nominal</div>
+                    <div class="kpi-label">Variación Nominal Masa Salarial</div>
                     <div class="kpi-value" id="kpi-masa-var-nom-pct">--%</div>
                     <div class="kpi-sub">
                         <span style="font-weight: 700;" id="kpi-masa-var-nom-abs">--</span>
@@ -217,7 +263,7 @@ El indicador compara el monto total de salarios liquidados en el período elegid
                         data-tooltip="Muestra la variación porcentual interanual de la masa salarial total liquidada en términos reales del período seleccionado respecto al mismo período del año anterior.
 Para ello, la masa salarial liquidada se ajusta por inflación utilizando el IPC del NEA, con el objetivo de obtener su valor real. Luego se compara el período seleccionado con el mismo período del año previo. De esta manera, el indicador permite analizar la evolución de la masa salarial en términos de poder adquisitivo.">
                         ?</div>
-                    <div class="kpi-label">Variación Real</div>
+                    <div class="kpi-label">Variación Real Masa Salarial</div>
                     <div class="kpi-value" id="kpi-masa-var-real">--%</div>
                     <div class="kpi-sub">
                         <span id="masa-real-var-abs" style="font-weight: 700;">--</span>
@@ -228,54 +274,6 @@ Para ello, la masa salarial liquidada se ajusta por inflación utilizando el IPC
             <p
                 style="color: var(--text-secondary); font-size: 0.8rem; margin-top: -3rem; margin-bottom: 4rem; text-align: left; padding-left: 10px;">
                 Fuente: SISPER</p>
-
-
-            <!-- Real Evolution Charts Grid -->
-            <section class="charts-grid-half" style="margin-top: 4rem;">
-                <!-- Real Coparticipation Chart -->
-                <div class="chart-container" style="margin-bottom: 0;">
-                    <div class="info-tooltip"
-                        data-tooltip="Muestra los ingresos por coparticipación disponible de los últimos 6 meses comparados con el mismo mes del año anterior ajustado por inflación. Las barras grises representan la recaudación del año pasado expresada en pesos actuales (con el poder de compra de hoy).
-
-La coparticipacion disponible surge de restar a la coparticipación neta el 19% que se redistribuye a los municipios.
-
-La coparticipacion neta incluye la suma de los conceptos de: C.F.I. Neta de Ley N° N° 26.075, Financ. Educativo Ley N° 26.075, Reg.Simplif. p/Pequeños Contribuyentes Ley Nº 24.977 y Compensación Consenso Fiscal.
-
-La coparticipación bruta incluye el total recibido en términos de coparticipación, es decir los conceptos integrados en coparticipación neta y aquellos que tienen afectacion específica.">
-                        ?</div>
-                    <div class="section-header">
-                        <div>
-                            <h2 class="section-title">Coparticipación Disponible Real</h2>
-                            <p class="section-subtitle">Evolución últimos 6 meses (Pesos constantes)</p>
-                        </div>
-                    </div>
-                    <div class="chart-wrapper">
-                        <canvas id="chartCopaRealEvol"></canvas>
-                    </div>
-                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 1rem; text-align: left;">
-                        Fuente: Ministerio de Economía e INDEC (IPC NEA)
-                    </p>
-                </div>
-
-                <!-- Real Masa Salarial Chart -->
-                <div class="chart-container" style="margin-bottom: 0;">
-                    <div class="info-tooltip"
-                        data-tooltip="Muestra la masa salarial de los últimos 6 meses comparada con el mismo mes del año anterior ajustado por inflación. Las barras grises representan la masa salarial del año pasado expresada en pesos actuales.">
-                        ?</div>
-                    <div class="section-header">
-                        <div>
-                            <h2 class="section-title">Masa Salarial Real</h2>
-                            <p class="section-subtitle">Evolución últimos 6 meses (Pesos constantes)</p>
-                        </div>
-                    </div>
-                    <div class="chart-wrapper">
-                        <canvas id="chartMasaRealEvol"></canvas>
-                    </div>
-                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 1rem; text-align: left;">
-                        Fuente: SISPER e INDEC (IPC NEA)
-                    </p>
-                </div>
-            </section>
 
 
             <!-- Copa vs Sueldos Chart Section -->
@@ -301,6 +299,54 @@ La coparticipación bruta incluye el total recibido en términos de coparticipac
                 <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 1rem; text-align: left;">
                     Fuente: Ministerio de Economía y Administración (Coparticipación) / SISPER (Salarios)
                 </p>
+            </section>
+
+
+            <!-- Real Evolution Charts Grid -->
+            <section class="charts-grid-half" style="margin-top: 4rem;">
+                <!-- Real Coparticipation Chart -->
+                <div class="chart-container" style="margin-bottom: 0;">
+                    <div class="info-tooltip"
+                        data-tooltip="Muestra la evolución de la coparticipación disponible real de los últimos 3 meses, comparando los datos actuales contra el año anterior. La coparticipación se deflacta a partir del IPC del NEA, a fin de poder observar la evolución del poder adquisitivo de los recursos.
+
+La coparticipación disponible surge de restar a la coparticipación neta el 19% que se redistribuye a los municipios.
+
+La coparticipación neta incluye la suma de los conceptos de: C.F.I. Neta de Ley N° N° 26.075, Financ. Educativo Ley N° 26.075, Reg.Simplif. p/Pequeños Contribuyentes Ley Nº 24.977 y Compensación Consenso Fiscal.
+
+La coparticipación bruta incluye el total recibido en términos de coparticipación, es decir los conceptos integrados en coparticipación neta y aquellos que tienen afectación específica.">
+                        ?</div>
+                    <div class="section-header">
+                        <div>
+                            <h2 class="section-title">Coparticipación Disponible Real</h2>
+                            <p class="section-subtitle">Evolución últimos 3 meses (Pesos constantes)</p>
+                        </div>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="chartCopaRealEvol"></canvas>
+                    </div>
+                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 1rem; text-align: left;">
+                        Fuente: Ministerio de Economía e INDEC (IPC NEA)
+                    </p>
+                </div>
+
+                <!-- Real Masa Salarial Chart -->
+                <div class="chart-container" style="margin-bottom: 0;">
+                    <div class="info-tooltip"
+                        data-tooltip="Muestra la evolución de la masa salarial real de los últimos 3 meses, comparando los datos actuales contra el año anterior. El indicador se deflacta a partir del IPC del NEA, a fin de poder observar la evolución del poder adquisitivo de los recursos.">
+                        ?</div>
+                    <div class="section-header">
+                        <div>
+                            <h2 class="section-title">Masa Salarial Real</h2>
+                            <p class="section-subtitle">Evolución últimos 3 meses (Pesos constantes)</p>
+                        </div>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="chartMasaRealEvol"></canvas>
+                    </div>
+                    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 1rem; text-align: left;">
+                        Fuente: SISPER e INDEC (IPC NEA)
+                    </p>
+                </div>
             </section>
 
             <!-- Daily Chart Section -->

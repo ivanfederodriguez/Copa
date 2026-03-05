@@ -39,7 +39,7 @@
 
     <nav class="nav-vertical">
       <a href="../main/index.html" class="nav-link-vertical">Inicio</a>
-      <a href="../monitor-mensual/index.html" class="nav-link-vertical">Monitor Mensual Coparticipación</a>
+      <a href="../monitor-mensual/index.html" class="nav-link-vertical">Análisis Mensual Coparticipación</a>
       <a href="../analisis-anual/index.html" class="nav-link-vertical active">Análisis Anual Coparticipación</a>
       <a href="../analisis-personal/index.html" class="nav-link-vertical" style="display: none;">Análisis Salarial</a>
     </nav>
@@ -95,7 +95,7 @@ La coparticipación bruta incluye el total recibido en términos de coparticipac
 
         <article class="kpi-card">
           <div class="info-tooltip"
-            data-tooltip="Monto total, en billones de pesos corrientes, de los ingresos por coparticipación disponible para el año anterior al seleccionado. En caso de ser YTD, compara contra los mismos meses del año anterior.
+            data-tooltip="Monto total, en billones de pesos corrientes, de los ingresos por coparticipación disponible para el año anterior al seleccionado. En caso de ser un periodo incompleto, compara contra los mismos meses del año anterior.
 
 La coparticipacion disponible surge de restar a la coparticipación neta el 19% que se redistribuye a los municipios.
 
@@ -122,7 +122,7 @@ La coparticipacion neta incluye la suma de los conceptos de: C.F.I. Neta de Ley 
 
 La coparticipación bruta incluye el total recibido en términos de coparticipación, es decir los conceptos integrados en coparticipación neta y aquellos que tienen afectacion específica.">
             ?</div>
-          <div class="kpi-label">Variación Nominal</div>
+          <div class="kpi-label">Variación Nominal Coparticipación</div>
           <div class="kpi-value text-success" id="kpi-recaudacion-var-nom-pct">--%</div>
           <div class="kpi-sub">
             <span style="font-weight: 700; display: none;" id="kpi-recaudacion-var-nom-abs">--</span>
@@ -140,7 +140,7 @@ La coparticipacion neta incluye la suma de los conceptos de: C.F.I. Neta de Ley 
 
 La coparticipación bruta incluye el total recibido en términos de coparticipación, es decir los conceptos integrados en coparticipación neta y aquellos que tienen afectacion específica.">
             ?</div>
-          <div class="kpi-label">Variación Real</div>
+          <div class="kpi-label">Variación Real Coparticipación</div>
           <div class="kpi-value" id="real-var-val">--%</div>
           <div class="kpi-sub">
             <span style="font-weight: 700; display: none;" id="real-var-abs">--</span>
@@ -188,7 +188,7 @@ La coparticipación bruta incluye el total recibido en términos de coparticipac
           <div class="info-tooltip"
             data-tooltip="Muestra la variación porcentual de la masa salarial total liquidada en términos nominales del año seleccionado respecto al año anterior.">
             ?</div>
-          <div class="kpi-label">Variación Nominal</div>
+          <div class="kpi-label">Variación Nominal Masa Salarial</div>
           <div class="kpi-value" id="kpi-masa-var-nom-pct">--%</div>
           <div class="kpi-sub">
             <span style="font-weight: 700; display: none;" id="kpi-masa-var-nom-abs">--</span>
@@ -200,7 +200,7 @@ La coparticipación bruta incluye el total recibido en términos de coparticipac
           <div class="info-tooltip"
             data-tooltip="Muestra la variación porcentual de la masa salarial total liquidada en términos reales del año seleccionado respecto al año anterior, ajustada por IPC del NEA.">
             ?</div>
-          <div class="kpi-label">Variación Real</div>
+          <div class="kpi-label">Variación Real Masa Salarial</div>
           <div class="kpi-value" id="kpi-masa-var-real">--%</div>
           <div class="kpi-sub">
             <span id="masa-real-var-abs" style="font-weight: 700; display: none;">--</span>
@@ -261,6 +261,46 @@ La coparticipación bruta incluye el total recibido en términos de coparticipac
         <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 1rem; text-align: left;">Fuente:
           INDEC y Ministerio de Economía de la Nación</p>
       </section>
+
+      <!-- Presupuesto vs Real (Anual Only 2026) -->
+      <div id="presupuesto-section-anual" style="display: none;">
+        <div class="header-content" style="text-align: left; margin-top: 2rem; margin-bottom: 2rem;">
+          <h2 style="font-size: var(--text-2xl); margin-bottom: 0.5rem;" class="text-gradient dashboard-title">Desempeño
+            Frente a Presupuesto Anual</h2>
+          <p style="color: var(--text-secondary); font-size: var(--text-base);">
+            Análisis comparativo de la coparticipación neta efectiva acumulada frente a los fondos presupuestados
+            acumulados del año.
+          </p>
+        </div>
+
+        <section class="hero-grid" style="grid-template-columns: repeat(2, 1fr) !important; margin-bottom: 2rem;">
+          <article class="kpi-card" style="height: auto;">
+            <div class="info-tooltip"
+              data-tooltip="Muestra la diferencia nominal en millones de pesos entre lo que la provincia esperaba recibir (según el Presupuesto) de forma acumulada y lo que efectivamente percibió (Coparticipación Neta Acumulada).">
+              ?</div>
+            <div class="kpi-label">Diferencia Nominal Acumulada (Neta vs Presupuestada)</div>
+            <div class="kpi-value" id="kpi-brecha-nom-anual">--</div>
+            <div class="kpi-sub" style="display: flex; gap: 8px; font-size: 0.85rem; flex-wrap: wrap;">
+              <span style="color: var(--text-secondary);">Recaudado: <strong id="kpi-neta-presupuesto-anual"
+                  style="color: #0f172a;">--</strong></span>
+              <span style="color: var(--text-secondary);">Presupuestado: <strong id="kpi-esperada-anual"
+                  style="color: #0f172a;">--</strong></span>
+            </div>
+          </article>
+
+          <article class="kpi-card" style="height: auto;">
+            <div class="info-tooltip"
+              data-tooltip="Refleja qué porcentaje del presupuesto esperado acumulado del año fue efectivamente cubierto por la recaudación neta real acumulada.">
+              ?</div>
+            <div class="kpi-label">Diferencia Porcentual Acumulada</div>
+            <div class="kpi-value" id="kpi-brecha-pct-anual">--%</div>
+            <div class="kpi-sub">
+              <span style="color: var(--text-secondary); margin-left: 5px;">Brecha Porcentual respecto al monto
+                presupuestado acumulado</span>
+            </div>
+          </article>
+        </section>
+      </div>
 
       <!-- Gap Chart Section -->
       <section class="chart-container" style="margin-top: 4rem; margin-bottom: 4rem; display: none;">

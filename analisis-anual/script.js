@@ -144,6 +144,9 @@ function initYearSelector(periods) {
 
     // Populate options (newest first - already generally ordered from backend)
     periods.forEach(period => {
+        // Skip year 2022 as requested
+        if (period.id === '2022' || period.year === 2022) return;
+
         const option = document.createElement('option');
         option.value = period.id;
         option.textContent = period.label;
@@ -151,7 +154,8 @@ function initYearSelector(periods) {
         if (period.incomplete) {
             option.style.color = '#ef4444';
             option.dataset.incomplete = 'true';
-            option.textContent += ' (YTD)';
+            // Replace YTD with (incompleto)
+            option.textContent = period.label.replace(' (YTD)', '') + ' (incompleto)';
         }
 
         selector.appendChild(option);
@@ -172,10 +176,19 @@ function initYearSelector(periods) {
     selector.addEventListener('change', (e) => {
         const selectedOption = e.target.selectedOptions[0];
         if (selectedOption && selectedOption.dataset.incomplete === 'true') {
-            alert("Atención: El año seleccionado aún cuenta con datos incompletos. Las comparativas se realizan en modo YTD (Year-to-Date) contra los mismos meses del año anterior.");
+            selector.style.color = '#ef4444'; // Red for incomplete
+            alert("Atención: El año seleccionado aún cuenta con datos incompletos. Las comparativas se realizan contra los mismos meses del año anterior.");
+        } else {
+            selector.style.color = ''; // Default
         }
         renderDashboard(e.target.value);
     });
+
+    // Set initial color
+    const initialOption = selector.selectedOptions[0];
+    if (initialOption && initialOption.dataset.incomplete === 'true') {
+        selector.style.color = '#ef4444';
+    }
 }
 
 function renderDashboard(periodId) {
@@ -189,7 +202,7 @@ function renderDashboard(periodId) {
     renderKPIs(periodData.kpi);
 
     // Dynamic Labels
-    const periodLabel = periodData.kpi.meta.periodo; // e.g. "Año 2026 (YTD)"
+    const periodLabel = periodData.kpi.meta.periodo.replace(' (YTD)', ' (incompleto)'); // e.g. "Año 2026 (incompleto)"
 
     // Update Recaudación Labels
     const lblRecCurrent = document.getElementById('label-recaudacion-current');
@@ -212,7 +225,9 @@ function renderDashboard(periodId) {
     // Update Chart
     renderMonthlyChart(periodData.charts.monthly, iterYear, prevYear);
     renderCopaVsSalarioChart(periodData.charts.copa_vs_salario);
-    renderBrechaChart(periodData.charts.copa_vs_salario, iterYear);
+
+    // Call renderBrechaChart and trigger card rendering
+    renderBrechaChart(periodData.charts.copa_vs_salario, iterYear, periodData.kpi.meta.max_month, periodData.kpi.meta.is_complete);
 }
 
 // ... Format functions ...
@@ -276,7 +291,7 @@ function renderKPIs(kpi) {
     if (kpi.recaudacion.ipc_missing) {
         if (recVarRealEl) {
             recVarRealEl.textContent = 'Sin IPC completo';
-            recVarRealEl.className = 'kpi-value text-secondary';
+            recVarRealEl.className = 'kpi-value text-secondary text-missing';
         }
         if (recVarRealAbsEl) recVarRealAbsEl.textContent = '--';
     } else {
@@ -342,8 +357,12 @@ function renderKPIs(kpi) {
 
     if (isIncomplete || isIpcMissing) {
         if (masaVarRealEl) {
-            masaVarRealEl.textContent = 'Sin datos completos';
-            masaVarRealEl.className = 'kpi-value text-secondary';
+            if (isIpcMissing) {
+                masaVarRealEl.textContent = 'Sin IPC completo';
+            } else {
+                masaVarRealEl.textContent = 'Sin datos completos';
+            }
+            masaVarRealEl.className = 'kpi-value text-secondary text-missing';
         }
         if (masaVarRealAbsEl) masaVarRealAbsEl.textContent = '--';
     } else {
@@ -560,7 +579,7 @@ function renderCopaVsSalarioChart(dataCopa) {
 
 let chartBrechaInstance = null;
 
-function renderBrechaChart(dataCopa, currentYear) {
+function renderBrechaChart(dataCopa, currentYear, maxMonth, isComplete) {
     const ctx = document.getElementById('chartBrechaAcumulada');
     if (!ctx) return;
 
@@ -568,30 +587,57 @@ function renderBrechaChart(dataCopa, currentYear) {
         chartBrechaInstance.destroy();
     }
 
-    if (!dataCopa || !dataCopa.cumulative_esperada || !dataCopa.cumulative_copa) return;
+    const sectionCards = document.getElementById('presupuesto-section-anual');
+    const chartContainer = ctx.closest('.chart-container');
+
+    // Check if we should render (currently logic targets 2026 data based on user reqs)
+    if (!dataCopa || !dataCopa.cumulative_esperada || !dataCopa.cumulative_copa || currentYear !== 2026) {
+        if (chartContainer) chartContainer.style.display = 'none';
+        if (sectionCards) sectionCards.style.display = 'none';
+        return;
+    }
+
+    if (chartContainer) chartContainer.style.display = 'block';
+    if (sectionCards) sectionCards.style.display = 'block';
 
     const colorActual = '#10b981';
     const colorFaltante = '#94a3b8';
     const colorExcedente = '#047857';
 
-    const expectedData = dataCopa.cumulative_esperada;
-    // Apply 19% reduction to actuals for standard representation
+    // Apply 19% reduction (multiply by 0.81) to get provincial "Neta / Disponible" portion
     const factor = 0.81;
+    const expectedData = dataCopa.cumulative_esperada.map(val => val !== null ? val * factor : null);
     const actualDataRaw = dataCopa.cumulative_copa.map(val => val !== null ? val * factor : null);
 
     const baseData = [];
     const faltanteData = [];
     const excedenteData = [];
 
+    let lastActualVal = 0;
+    let lastExpectedVal = 0;
+
+    // We only want to analyze complete months.
+    // maxMonth is 1-indexed (1: Jan, etc.).
+    // If the year is incomplete, the maxMonth indicates the month currently in progress, so the last complete month is maxMonth - 1.
+    let limitMonthIndex = 12;
+    if (maxMonth) {
+        limitMonthIndex = isComplete ? maxMonth : (maxMonth - 1);
+    }
+
     for (let i = 0; i < expectedData.length; i++) {
         const exp = expectedData[i];
         const act = actualDataRaw[i];
 
-        if (exp === null || act === null) {
+        // If data is null or we're past the last complete month, we don't calculate or plot the difference 
+        // to avoid comparing a partial month of revenue against a full month's expected budget.
+        if (exp === null || act === null || i >= limitMonthIndex) {
             baseData.push(null);
             faltanteData.push(null);
             excedenteData.push(null);
         } else {
+            lastActualVal = act;
+            lastExpectedVal = exp;
+
             if (act <= exp) {
                 baseData.push(act);
                 faltanteData.push(exp - act);
@@ -602,6 +648,34 @@ function renderBrechaChart(dataCopa, currentYear) {
                 excedenteData.push(act - exp);
             }
         }
+    }
+
+    // Populate Cards
+    if (sectionCards) {
+        const diffAbs = lastActualVal - lastExpectedVal;
+        const diffPct = lastExpectedVal > 0 ? ((lastActualVal / lastExpectedVal) - 1) * 100 : 0;
+
+        const pctSign = diffPct > 0 ? '+' : '';
+        const absSign = diffAbs > 0 ? '+' : '';
+
+        const kpiNom = document.getElementById('kpi-brecha-nom-anual');
+        if (kpiNom) {
+            kpiNom.textContent = absSign + formatMillions(Math.abs(diffAbs));
+            kpiNom.className = `kpi-value ${diffAbs >= 0 ? 'text-success' : 'text-danger'}`;
+        }
+
+        const kpiPct = document.getElementById('kpi-brecha-pct-anual');
+        if (kpiPct) {
+            // Remove replace('-', '') to preserve negative sign when formatPercentage is used
+            kpiPct.textContent = pctSign + formatPercentage(diffPct).replace('+', '');
+            kpiPct.className = `kpi-value ${diffPct >= 0 ? 'text-success' : 'text-danger'}`;
+        }
+
+        const valNeta = document.getElementById('kpi-neta-presupuesto-anual');
+        if (valNeta) valNeta.textContent = formatMillions(lastActualVal);
+
+        const valEsperada = document.getElementById('kpi-esperada-anual');
+        if (valEsperada) valEsperada.textContent = formatMillions(lastExpectedVal);
     }
 
     chartBrechaInstance = new Chart(ctx.getContext('2d'), {
@@ -670,7 +744,7 @@ function renderBrechaChart(dataCopa, currentYear) {
                         label: function (context) {
                             let label = context.dataset.label || '';
                             if (context.parsed.y !== null) {
-                                return `${label}: ${formatBillions(context.parsed.y)}`;
+                                return `${label}: ${formatMillions(context.parsed.y)}`;
                             }
                         },
                         afterBody: function (tooltipItems) {

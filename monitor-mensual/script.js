@@ -147,10 +147,19 @@ function initMonthSelector(periods) {
     selector.addEventListener('change', (e) => {
         const selectedOption = e.target.selectedOptions[0];
         if (selectedOption && selectedOption.dataset.incomplete === 'true') {
+            selector.style.color = '#ef4444'; // Red for incomplete
             alert("Atención: El periodo seleccionado aún cuenta con datos incompletos. Las variaciones y proyecciones pueden cambiar significativamente hasta el cierre definitivo.");
+        } else {
+            selector.style.color = ''; // Default
         }
         renderDashboard(e.target.value);
     });
+
+    // Set initial color
+    const initialOption = selector.selectedOptions[0];
+    if (initialOption && initialOption.dataset.incomplete === 'true') {
+        selector.style.color = '#ef4444';
+    }
 }
 
 function renderDashboard(periodId) {
@@ -163,8 +172,14 @@ function renderDashboard(periodId) {
     const currentYear = parseInt(yearStr);
     const prevYear = currentYear - 1;
 
+    // Check if period is complete
+    const periods = dashboardData.meta.available_periods;
+    const defaultIndex = periods.findIndex(p => p.id === dashboardData.meta.default_period_id);
+    const pIndex = periods.findIndex(p => p.id === periodId);
+    const isPeriodComplete = pIndex <= defaultIndex;
+
     // Update KPI Grid
-    renderKPIs(periodData.kpi);
+    renderKPIs(periodData.kpi, isPeriodComplete, periodId);
 
     // Dynamic Labels
     const periodLabel = periodData.kpi.meta.periodo; // "Enero 2026"
@@ -183,8 +198,15 @@ function renderDashboard(periodId) {
     }
 
     // Update Recaudación Labels
+    const isIncomplete = periodData.kpi.masa_salarial.is_incomplete;
+    const statusSuffix = isIncomplete ? ' (incompleto)' : '';
+    const statusColor = isIncomplete ? '#ef4444' : '';
+
     const lblRecCurrent = document.getElementById('label-recaudacion-current');
-    if (lblRecCurrent) lblRecCurrent.textContent = `Copa. Disponible ${monthName} ${currentYear}`;
+    if (lblRecCurrent) {
+        lblRecCurrent.textContent = `Copa. Disponible ${monthName} ${currentYear}${statusSuffix}`;
+        lblRecCurrent.style.color = statusColor;
+    }
 
     const lblRecPrev = document.getElementById('label-recaudacion-prev');
     if (lblRecPrev) lblRecPrev.textContent = `Copa. Disponible ${monthName} ${prevYear}`;
@@ -192,12 +214,17 @@ function renderDashboard(periodId) {
     // Update Masa Salarial Subtitle
     const masaSubtitle = document.getElementById('masa-salarial-subtitle');
     if (masaSubtitle) {
-        masaSubtitle.textContent = `Relación entre Coparticipación y Masa Salarial para ${monthName} ${prevYear} vs ${currentYear}`;
+        masaSubtitle.textContent = `Relación entre Coparticipación y Masa Salarial para ${monthName} ${prevYear} vs ${currentYear}${statusSuffix}`;
+        if (isIncomplete) masaSubtitle.style.color = '#ef4444';
+        else masaSubtitle.style.color = '';
     }
 
     // Update Masa Salarial Labels
     const lblMasaCurrent = document.getElementById('label-masa-current');
-    if (lblMasaCurrent) lblMasaCurrent.textContent = `Masa Salarial ${monthName} ${currentYear}`;
+    if (lblMasaCurrent) {
+        lblMasaCurrent.textContent = `Masa Salarial ${monthName} ${currentYear}${statusSuffix}`;
+        lblMasaCurrent.style.color = statusColor;
+    }
 
     const lblMasaPrev = document.getElementById('label-masa-prev');
     if (lblMasaPrev) lblMasaPrev.textContent = `Masa Salarial ${monthName} ${prevYear}`;
@@ -230,7 +257,7 @@ function formatPercentage(value) {
     return `${sign}${formattedValue}%`;
 }
 
-function renderKPIs(kpi) {
+function renderKPIs(kpi, isPeriodComplete, periodId) {
     // Apply 19% reduction (multiply by 0.81) to Recaudación values
     const factor = 0.81;
     const currentNet = kpi.recaudacion.current * factor;
@@ -262,8 +289,8 @@ function renderKPIs(kpi) {
     const recVarRealAbsEl = document.getElementById('real-var-abs');
 
     if (kpi.recaudacion.ipc_missing) {
-        recVarRealEl.textContent = 'Sin datos';
-        recVarRealEl.className = 'kpi-value text-secondary';
+        recVarRealEl.textContent = 'Sin IPC completo';
+        recVarRealEl.className = 'kpi-value text-secondary text-missing';
         if (recVarRealAbsEl) recVarRealAbsEl.textContent = '--';
     } else {
         recVarRealEl.textContent = formatPercentage(kpi.recaudacion.var_real);
@@ -333,8 +360,12 @@ function renderKPIs(kpi) {
     const masaVarRealAbsEl = document.getElementById('masa-real-var-abs');
 
     if (isIncomplete || isIpcMissing) {
-        masaVarRealEl.textContent = 'Sin datos';
-        masaVarRealEl.className = 'kpi-value text-secondary';
+        if (isIpcMissing) {
+            masaVarRealEl.textContent = 'Sin IPC completo';
+        } else {
+            masaVarRealEl.textContent = 'Sin datos';
+        }
+        masaVarRealEl.className = 'kpi-value text-secondary text-missing';
         if (masaVarRealAbsEl) masaVarRealAbsEl.textContent = '--';
     } else {
         masaVarRealEl.textContent = formatPercentage(kpi.masa_salarial.var_real);
@@ -349,6 +380,46 @@ function renderKPIs(kpi) {
             const diffRealSign = diffReal >= 0 ? '+' : '-';
             masaVarRealAbsEl.textContent = diffRealSign + formatMillions(Math.abs(diffReal));
             masaVarRealAbsEl.className = diffReal >= 0 ? 'text-success' : 'text-danger';
+        }
+    }
+
+    // --- Presupuesto vs Real (Only 2026 Complete Months) ---
+    const presupuestoSection = document.getElementById('presupuesto-section');
+    if (presupuestoSection && periodId) {
+        if (periodId.startsWith('2026') && isPeriodComplete) {
+            presupuestoSection.style.display = 'block';
+
+            // Multiply by 0.81 to get provincial "Neta / Disponible" portion
+            const neta = (kpi.recaudacion.neta_current || 0) * 0.81;
+            const esperada = (kpi.recaudacion.esperada || 0) * 0.81;
+
+            const diffAbs = neta - esperada;
+            const diffPct = esperada > 0 ? ((neta / esperada) - 1) * 100 : 0;
+
+            const pctSign = diffPct > 0 ? '+' : '';
+            const absSign = diffAbs > 0 ? '+' : '';
+
+            const kpiNom = document.getElementById('kpi-brecha-nom');
+            if (kpiNom) {
+                kpiNom.textContent = absSign + formatMillions(Math.abs(diffAbs));
+                kpiNom.className = `kpi-value ${diffAbs >= 0 ? 'text-success' : 'text-danger'}`;
+            }
+
+            const kpiPct = document.getElementById('kpi-brecha-pct');
+            if (kpiPct) {
+                // Remove replace('-', '') to preserve negative sign when formatPercentage is used
+                kpiPct.textContent = pctSign + formatPercentage(diffPct).replace('+', '');
+                kpiPct.className = `kpi-value ${diffPct >= 0 ? 'text-success' : 'text-danger'}`;
+            }
+
+            const valNeta = document.getElementById('kpi-neta-presupuesto');
+            if (valNeta) valNeta.textContent = formatMillions(neta);
+
+            const valEsperada = document.getElementById('kpi-esperada');
+            if (valEsperada) valEsperada.textContent = formatMillions(esperada);
+
+        } else {
+            presupuestoSection.style.display = 'none';
         }
     }
 }
@@ -725,9 +796,15 @@ function renderRealEvolutionCharts(periodId) {
     const selectedIdx = periods.findIndex(p => p.id === periodId);
     if (selectedIdx === -1) return;
 
-    // Get last 6 months ending in selectedIdx
-    const startIndex = Math.max(0, selectedIdx - 5);
+    // Show last 3 months ending in selectedIdx
+    const startIndex = Math.max(0, selectedIdx - 2);
     const chartPeriods = periods.slice(startIndex, selectedIdx + 1);
+
+    // Update subtitles to 'Últimos 3 meses'
+    const subCopa = document.querySelector('#chartCopaRealEvol').closest('.chart-container').querySelector('.section-subtitle');
+    if (subCopa) subCopa.textContent = `Evolución últimos 3 meses (Pesos constantes)`;
+    const subMasa = document.querySelector('#chartMasaRealEvol').closest('.chart-container').querySelector('.section-subtitle');
+    if (subMasa) subMasa.textContent = `Evolución últimos 3 meses (Pesos constantes)`;
 
     const labels = [];
     const copaCurrent = [];
@@ -763,12 +840,19 @@ function renderRealEvolutionCharts(periodId) {
         masaPrevReal.push(masaPrevR);
     });
 
-    // Render Charts
-    renderBarComparisonChart('chartCopaRealEvol', labels, 'Copa. Actual', copaCurrent, 'Copa. Año Ant. (Real)', copaPrevReal, '#10b981');
-    renderBarComparisonChart('chartMasaRealEvol', labels, 'Masa Actual', masaCurrent, 'Masa Año Ant. (Real)', masaPrevReal, '#3b82f6');
+    // Determine years for labels
+    const currentYear = periods[selectedIdx].year;
+    const prevYear = currentYear - 1;
+
+    // Pass periods info to the chart for dynamic tooltips
+    const barPeriods = chartPeriods.map(p => ({ year: p.year, label: p.label }));
+
+    // Render Charts - Use generic labels in legend, precise years in tooltips
+    renderBarComparisonChart('chartCopaRealEvol', labels, `Copa. Disponible Real`, copaCurrent, `Copa. Disponible Real`, copaPrevReal, '#10b981', barPeriods);
+    renderBarComparisonChart('chartMasaRealEvol', labels, `Masa Salarial Real`, masaCurrent, `Masa Salarial Real`, masaPrevReal, '#3b82f6', barPeriods);
 }
 
-function renderBarComparisonChart(canvasId, labels, label1, data1, label2, data2, color1) {
+function renderBarComparisonChart(canvasId, labels, labelBase, data1, label2Ignored, data2, color1, barPeriods) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -783,13 +867,13 @@ function renderBarComparisonChart(canvasId, labels, label1, data1, label2, data2
             labels: labels,
             datasets: [
                 {
-                    label: label1,
+                    label: `Actual`,
                     data: data1,
                     backgroundColor: color1,
                     borderRadius: 4
                 },
                 {
-                    label: label2,
+                    label: `Año Anterior`,
                     data: data2,
                     backgroundColor: '#94a3b8',
                     borderRadius: 4
@@ -809,7 +893,11 @@ function renderBarComparisonChart(canvasId, labels, label1, data1, label2, data2
                     intersect: false,
                     callbacks: {
                         label: function (context) {
-                            return `${context.dataset.label}: $${new Intl.NumberFormat('es-AR').format(Math.round(context.raw))} M`;
+                            const p = barPeriods[context.dataIndex];
+                            const isPrev = context.datasetIndex === 1;
+                            const year = isPrev ? p.year - 1 : p.year;
+                            const value = new Intl.NumberFormat('es-AR').format(Math.round(context.raw));
+                            return `${labelBase} ${year}: $${value} M`;
                         }
                     }
                 }

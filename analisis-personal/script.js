@@ -215,8 +215,8 @@ function renderKPIs(kpi) {
         // kpi-real-var
         const realVarEl = document.getElementById('kpi-real-var');
         if (kpi.var_real_ia === null || kpi.var_real_ia === undefined) {
-            realVarEl.textContent = 'Sin datos';
-            realVarEl.className = 'kpi-value text-secondary';
+            realVarEl.textContent = 'Sin IPC completo';
+            realVarEl.className = 'kpi-value text-secondary text-missing';
             document.getElementById('label-real-period').textContent = '-';
         } else {
             realVarEl.textContent = formatPercentage(kpi.var_real_ia);
@@ -240,8 +240,8 @@ function renderKPIs(kpi) {
     // kpi-cbt-val (Now a main value)
     const cbtValEl = document.getElementById('kpi-cbt-val');
     if (kpi.cbt_valor === null || kpi.cbt_valor === undefined || kpi.cbt_valor === 0) {
-        cbtValEl.textContent = 'Sin datos';
-        cbtValEl.className = 'kpi-value text-secondary';
+        cbtValEl.textContent = 'Sin IPC completo';
+        cbtValEl.className = 'kpi-value text-secondary text-missing';
     } else {
         cbtValEl.textContent = formatCurrency(kpi.cbt_valor);
         cbtValEl.className = 'kpi-value'; // Reset class
@@ -250,8 +250,13 @@ function renderKPIs(kpi) {
     // kpi-cbt-ratio
     const cbtRatioEl = document.getElementById('kpi-cbt-ratio');
     if (kpi.is_incomplete || kpi.cbt_ratio === null || kpi.cbt_ratio === undefined || kpi.cbt_ratio === 0) {
-        cbtRatioEl.textContent = 'Sin datos';
-        cbtRatioEl.className = 'kpi-value text-secondary';
+        if (kpi.cbt_ratio === null || kpi.cbt_ratio === undefined || kpi.cbt_ratio === 0) {
+            cbtRatioEl.textContent = 'Sin IPC completo';
+            cbtRatioEl.className = 'kpi-value text-secondary text-missing';
+        } else {
+            cbtRatioEl.textContent = 'Sin datos';
+            cbtRatioEl.className = 'kpi-value text-secondary';
+        }
     } else {
         cbtRatioEl.textContent = formatDecimal(kpi.cbt_ratio);
         cbtRatioEl.className = `kpi-value ${kpi.cbt_ratio >= 1.5 ? 'text-success' : 'text-danger'}`;

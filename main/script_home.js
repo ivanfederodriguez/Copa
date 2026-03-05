@@ -187,12 +187,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 selector.addEventListener('change', (e) => {
                     const selectedOption = e.target.selectedOptions[0];
                     if (selectedOption && selectedOption.dataset.incomplete === 'true') {
+                        selector.style.color = '#ef4444'; // Red for incomplete
                         alert("Atención: El periodo seleccionado aún cuenta con datos incompletos. Las variaciones y proyecciones pueden cambiar significativamente hasta el cierre definitivo.");
+                    } else {
+                        selector.style.color = ''; // Default
                     }
                     currentPeriodId = e.target.value;
                     renderKPIs(mainData, personalData, currentPeriodId);
                     renderCoverageChart(mainData, currentPeriodId);
                 });
+
+                // Set initial color
+                const initialOption = selector.selectedOptions[0];
+                if (initialOption && initialOption.dataset.incomplete === 'true') {
+                    selector.style.color = '#ef4444';
+                }
             }
 
             // Initial render
@@ -248,10 +257,23 @@ function renderKPIs(mainData, personalData, currentPeriodId) {
         dashboardTitle.textContent = `Tablero Ejecutivo Provincial`;
     }
 
+    // Dynamic Period Label for Cards
+    const isPeriodIncomplete = mainData.data[currentPeriodId].kpi.masa_salarial.is_incomplete;
+    const periodStatus = isPeriodIncomplete ? ' (incompleto)' : '';
+    const periodLabelFinal = `${periodLabel} ${year}${periodStatus}`;
+
     // 1. Variación Real Coparticipación
     const copaData = mainData.data[currentPeriodId].kpi.recaudacion;
     const kpiCopaReal = copaData.ipc_missing ? null : copaData.var_real;
-    updateKPI('kpi-copa-var-real', kpiCopaReal, true);
+    updateKPI('kpi-copa-var-real', kpiCopaReal, true, false, copaData.ipc_missing ? 'IPC' : null);
+
+    // Update Card Subtitles with period
+    const copaSubEl = document.getElementById('kpi-copa-var-real-subtitle');
+    if (copaSubEl) {
+        copaSubEl.textContent = `Variación i.a. Deflactada | ${periodLabelFinal}`;
+        if (isPeriodIncomplete) copaSubEl.style.color = '#ef4444';
+        else copaSubEl.style.color = '';
+    }
 
     // 2. Cobertura Salarial (Main)
     const masaData = mainData.data[currentPeriodId].kpi.masa_salarial;
@@ -275,24 +297,35 @@ function renderKPIs(mainData, personalData, currentPeriodId) {
 
     if (personalMetrics.salario_var_real_ia !== null && personalMetrics.salario_var_real_ia !== undefined) {
         kpiSalarioReal = personalMetrics.salario_var_real_ia;
-    } else {
-        kpiSalarioReal = null; // Enforce proper missing state
     }
 
-    if (personalMetrics.cbt_ratio !== null && personalMetrics.cbt_ratio !== undefined) {
-        kpiCbtRatio = personalMetrics.cbt_ratio;
-    } else {
-        kpiCbtRatio = null;
-    }
+    // Check if IPC is missing (based on mainData IPC state)
+    const isIpcMissing = mainData.data[currentPeriodId].kpi.recaudacion.ipc_missing;
+    updateKPI('kpi-salario-var-real', kpiSalarioReal, true, false, isIpcMissing ? 'IPC' : null);
 
-    updateKPI('kpi-salario-var-real', kpiSalarioReal, true);
+    // Update Salary Card Subtitle
+    const salarioSubEl = document.getElementById('kpi-salario-var-real-subtitle');
+    if (salarioSubEl) {
+        salarioSubEl.textContent = `Variación i.a. Deflactada | ${periodLabelFinal}`;
+        if (isPeriodIncomplete) salarioSubEl.style.color = '#ef4444';
+        else salarioSubEl.style.color = '';
+    }
 
     // 4. Ratio CBT (Personal)
+    if (personalMetrics.cbt_ratio !== null && personalMetrics.cbt_ratio !== undefined) {
+        kpiCbtRatio = personalMetrics.cbt_ratio;
+    }
+
     const el = document.getElementById('kpi-cbt-ratio');
     if (el) {
         if (kpiCbtRatio === null || kpiCbtRatio === undefined) {
-            el.textContent = 'Sin datos';
-            el.className = 'kpi-value text-secondary';
+            if (isIpcMissing) {
+                el.textContent = 'Sin IPC completo';
+                el.className = 'kpi-value text-secondary text-missing';
+            } else {
+                el.textContent = 'Sin datos';
+                el.className = 'kpi-value text-secondary';
+            }
         } else {
             el.textContent = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(kpiCbtRatio);
             el.className = `kpi-value ${kpiCbtRatio >= 1.5 ? 'text-success' : 'text-danger'}`;
@@ -300,12 +333,18 @@ function renderKPIs(mainData, personalData, currentPeriodId) {
     }
 }
 
-function updateKPI(elementId, value, useColor = true, isCoverage = false) {
+function updateKPI(elementId, value, useColor = true, isCoverage = false, reason = null) {
     const el = document.getElementById(elementId);
     if (!el) return;
 
     if (value === null || value === undefined) {
-        el.textContent = 'Sin datos';
+        if (reason === 'IPC') {
+            el.textContent = 'Sin IPC completo';
+            el.className = 'kpi-value text-secondary text-missing';
+        } else {
+            el.textContent = 'Sin datos';
+            el.className = 'kpi-value text-secondary';
+        }
         return;
     }
 

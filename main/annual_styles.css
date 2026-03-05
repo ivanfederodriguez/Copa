@@ -37,13 +37,13 @@
 
 .card-title {
     margin-bottom: 0.25rem;
-    font-size: 1.25rem;
+    font-size: var(--text-xl);
     /* Match H3 size */
 }
 
 .card-subtitle {
     color: var(--text-secondary);
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     font-weight: 400;
 }
 
@@ -61,7 +61,7 @@
     border-top: 1px solid rgba(255, 255, 255, 0.05);
     color: var(--text-secondary);
     /* maybe even darker/smaller? */
-    font-size: 0.7rem;
+    font-size: var(--text-xs);
     line-height: 1.4;
 }
 
@@ -69,7 +69,7 @@
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 1rem;
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
 }
 
 .premium-table th {
@@ -78,7 +78,7 @@
     color: var(--text-secondary);
     font-weight: 600;
     text-transform: uppercase;
-    font-size: 0.75rem;
+    font-size: var(--text-xs);
     letter-spacing: 0.05em;
     border-bottom: 1px solid var(--glass-border);
 }
@@ -97,12 +97,12 @@
 
 .premium-table .year-cell {
     font-weight: 700;
-    font-size: 1rem;
+    font-size: var(--text-base);
 }
 
 .var-tag {
     font-weight: 700;
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
 }
 
 .var-pos {
@@ -118,7 +118,7 @@
 }
 
 .table-footer-note {
-    font-size: 0.8rem;
+    font-size: var(--text-xs);
     color: var(--text-secondary);
     background: rgba(255, 255, 255, 0.03);
     padding: 1rem;
