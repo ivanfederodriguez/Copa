@@ -99,7 +99,7 @@
                     <div class="info-tooltip"
                         data-tooltip="Monto remanente tras descontar la Masa Salarial del total de recursos disponibles (Recaudación Total Disponible - Masa Salarial).">
                         ?</div>
-                    <div class="kpi-label">Recursos Disponibles Post Sueldos</div>
+                    <div class="kpi-label">RECURSOS PARA GASTOS OPERATIVOS E INVERSIÓN</div>
                     <div class="kpi-value" id="kpi-post-sueldos-current">Loading...</div>
                     <div class="kpi-sub" style="font-size: 0.85rem; color: var(--text-secondary);">
                         Monto remanente tras cubir salarios
@@ -119,14 +119,13 @@
             <!-- KPI Grid -->
             <section class="hero-grid" id="row-copa-cards">
                 <article class="kpi-card">
-                    <div class="info-tooltip"
-                        data-tooltip="Monto total, en millones de pesos corrientes, de los ingresos por coparticipación disponible para el periodo actual seleccionado.
+                    <div class="info-tooltip" data-tooltip="Monto total, en pesos corrientes, de los ingresos provinciales disponibles provenientes de los Recursos de Origen Nacional (RON) para el periodo actual seleccionado.
 
-La coparticipacion disponible surge de restar a la coparticipación neta el 19% que se redistribuye a los municipios.
+El RON bruto incluye el total recibido de los Recursos de Origen Nacional, es decir el total que recibe la provincia para redistribuir a los municipios, aquellos con afectación específica y de libre disponibilidad.
 
-La coparticipacion neta incluye la suma de los conceptos de: C.F.I. Neta de Ley N° N° 26.075, Financ. Educativo Ley N° 26.075, Reg.Simplif. p/Pequeños Contribuyentes Ley Nº 24.977 y Compensación Consenso Fiscal.
+El RON neto surge del RON total descontado los recursos con afectación específica. Es decir  incluye la suma de los conceptos de: C.F.I. Neta de Ley N° 26.075, Financiamiento Educativo Ley N° 26.075, Régimen Simplificado para Pequeños Contribuyentes Ley N° 24.977 y Compensación Consenso Fiscal. 
 
-La coparticipación bruta incluye el total recibido en términos de coparticipación, es decir los conceptos integrados en coparticipación neta y aquellos que tienen afectacion específica.">
+El RON  disponible surge de restar al RON neto el 19% que se redistribuye a los municipios.">
                         ?</div>
                     <div class="kpi-label" id="label-recaudacion-current">RON Disponible Enero 2026</div>
                     <div class="kpi-value" id="kpi-recaudacion-current">Loading...</div>
@@ -140,14 +139,13 @@ La coparticipación bruta incluye el total recibido en términos de coparticipac
                 </article>
 
                 <article class="kpi-card">
-                    <div class="info-tooltip"
-                        data-tooltip="Monto total, en millones de pesos corrientes, de los ingresos por coparticipación disponible para el mismo periodo del año anterior al seleccionado.
+                    <div class="info-tooltip" data-tooltip="Monto total, en pesos corrientes, de los ingresos provinciales disponibles provenientes de los Recursos de Origen Nacional (RON) para el mismo periodo del año anterior al seleccionado.
 
-La coparticipacion disponible surge de restar a la coparticipación neta el 19% que se redistribuye a los municipios.
+El RON bruto incluye el total recibido de los Recursos de Origen Nacional, es decir el total que recibe la provincia para redistribuir a los municipios, aquellos con afectación específica y de libre disponibilidad.
 
-La coparticipacion neta incluye la suma de los conceptos de: C.F.I. Neta de Ley N° N° 26.075, Financ. Educativo Ley N° 26.075, Reg.Simplif. p/Pequeños Contribuyentes Ley Nº 24.977 y Compensación Consenso Fiscal.
+El RON neto surge del RON total descontado los recursos con afectación específica. Es decir  incluye la suma de los conceptos de: C.F.I. Neta de Ley N° 26.075, Financiamiento Educativo Ley N° 26.075, Régimen Simplificado para Pequeños Contribuyentes Ley N° 24.977 y Compensación Consenso Fiscal. 
 
-La coparticipación bruta incluye el total recibido en términos de coparticipación, es decir los conceptos integrados en coparticipación neta y aquellos que tienen afectacion específica.">
+El RON  disponible surge de restar al RON neto el 19% que se redistribuye a los municipios.">
                         ?</div>
                     <div class="kpi-label" id="label-recaudacion-prev">RON Disponible Enero 2025</div>
                     <div class="kpi-value" style="color: var(--text-secondary);" id="kpi-recaudacion-prev">Loading...
@@ -161,13 +159,12 @@ La coparticipación bruta incluye el total recibido en términos de coparticipac
 
                 <article class="kpi-card" id="card-copa-var-nom">
                     <div class="info-tooltip"
-                        data-tooltip="Muestra la variación porcentual interanual de la coparticipación disponible en términos nominales del periodo seleccionado respecto al mismo periodo del año anterior.
+                        data-tooltip="Muestra la variación porcentual interanual de los ingresos provinciales disponibles provenientes de los Recursos de Origen Nacional (RON) para el mismo periodo del año anterior al seleccionado.
 
-La coparticipacion disponible surge de restar a la coparticipación neta el 19% que se redistribuye a los municipios.
 
-La coparticipacion neta incluye la suma de los conceptos de: C.F.I. Neta de Ley N° N° 26.075, Financ. Educativo Ley N° 26.075, Reg.Simplif. p/Pequeños Contribuyentes Ley Nº 24.977 y Compensación Consenso Fiscal.
+El indicador compara el monto percibido en el período elegido con el registrado en el mismo período del año previo, sin realizar ajustes por inflación. De esta manera, refleja el crecimiento o la disminución de los recursos en valores corrientes. 
 
-La coparticipación bruta incluye el total recibido en términos de coparticipación, es decir los conceptos integrados en coparticipación neta y aquellos que tienen afectacion específica.">
+El valor de los Recursos de Origen Nacional disponibles, surge del RON total descontado los recursos con afectación específica y el porcentaje coparticipable con los municipios. Es decir  incluye la suma de los conceptos de: C.F.I. Neta de Ley N° 26.075, Financiamiento Educativo Ley N° 26.075, Régimen Simplificado para Pequeños Contribuyentes Ley N° 24.977 y Compensación Consenso Fiscal menos el 19% que se redistribuye a municipios.">
                         ?</div>
                     <div class="kpi-label">Variación Nominal RON</div>
                     <div class="kpi-value text-success" id="kpi-recaudacion-var-nom-pct">--%</div>
@@ -179,13 +176,11 @@ La coparticipación bruta incluye el total recibido en términos de coparticipac
 
                 <article class="kpi-card" id="card-copa-var-real">
                     <div class="info-tooltip"
-                        data-tooltip="Muestra la variación porcentual interanual de la coparticipación disponible en términos reales del período seleccionado respecto al mismo período del año anterior. La coparticipación disponible se deflacta por el IPC del NEA.
+                        data-tooltip="Muestra la variación porcentual interanual de los ingresos provinciales disponibles provenientes de los Recursos de Origen Nacional (RON) en términos reales del período seleccionado respecto al mismo período del año anterior. 
 
-La coparticipacion disponible surge de restar a la coparticipación neta el 19% que se redistribuye a los municipios.
+Para ello, primero se ajustan (deflactan) los ingresos provinciales disponibles provenientes de los Recursos de Origen Nacional (RON) utilizando el IPC nivel general del nivel País, con el objetivo de eliminar el efecto de la inflación. Luego, se calcula la variación entre el período elegido y el mismo período del año anterior. De esta manera, el indicador refleja si hubo un aumento o una disminución en el poder de compra de esos recursos.
 
-La coparticipacion neta incluye la suma de los conceptos de: C.F.I. Neta de Ley N° N° 26.075, Financ. Educativo Ley N° 26.075, Reg.Simplif. p/Pequeños Contribuyentes Ley Nº 24.977 y Compensación Consenso Fiscal.
-
-La coparticipación bruta incluye el total recibido en términos de coparticipación, es decir los conceptos integrados en coparticipación neta y aquellos que tienen afectacion específica.">
+El valor de los Recursos de Origen Nacional disponibles, surge del RON total descontado los recursos con afectación específica y el porcentaje coparticipable con los municipios. Es decir  incluye la suma de los conceptos de: C.F.I. Neta de Ley N° 26.075, Financiamiento Educativo Ley N° 26.075, Régimen Simplificado para Pequeños Contribuyentes Ley N° 24.977 y Compensación Consenso Fiscal menos el 19% que se redistribuye a municipios.">
                         ?</div>
                     <div class="kpi-label">Variación Real RON</div>
                     <div class="kpi-value" id="real-var-val">--%</div>
@@ -209,7 +204,9 @@ La coparticipación bruta incluye el total recibido en términos de coparticipac
                 <section class="hero-grid" id="row-reca-prov-cards">
                     <article class="kpi-card">
                         <div class="info-tooltip"
-                            data-tooltip="Monto total, en millones de pesos corrientes, de la recaudación provincial para el periodo actual seleccionado. Combina todos los impuestos recaudados (Inmobiliario Rural, Sellos, Ingresos Brutos, etc).">
+                            data-tooltip="Monto total, en pesos corrientes, de los ingresos provinciales disponibles provenientes de la Recaudación provincial para el periodo seleccionado.
+
+La Recaudación provincial disponible incluye lo recaudado en conceptos de impuestos inmobiliario rural, sellos, ingresos brutos directos e ingresos brutos convenio multilateral menos el 19% correspondiente a los municipios.">
                             ?</div>
                         <div class="kpi-label" id="label-reca-prov-current">ROP Disponible Enero 2026</div>
                         <div class="kpi-value" id="kpi-reca-prov-current">Loading...</div>
@@ -220,7 +217,9 @@ La coparticipación bruta incluye el total recibido en términos de coparticipac
 
                     <article class="kpi-card">
                         <div class="info-tooltip"
-                            data-tooltip="Monto de la recaudación provincial disponible para el mismo período del año anterior.">
+                            data-tooltip="Monto total, en pesos corrientes, de los ingresos provinciales disponibles provenientes de la Recaudación provincial para el mismo periodo del año anterior al seleccionado.
+
+La Recaudación provincial disponible incluye lo recaudado en conceptos de impuestos inmobiliario rural, sellos, ingresos brutos directos e ingresos brutos convenio multilateral menos el 19% correspondiente a los municipios.">
                             ?</div>
                         <div class="kpi-label" id="label-reca-prov-prev">ROP Disponible Enero 2025</div>
                         <div class="kpi-value" style="color: var(--text-secondary);" id="kpi-reca-prov-prev">Loading...
@@ -232,7 +231,11 @@ La coparticipación bruta incluye el total recibido en términos de coparticipac
 
                     <article class="kpi-card" id="card-reca-prov-var-nom">
                         <div class="info-tooltip"
-                            data-tooltip="Muestra la variación porcentual interanual de la recaudación provincial en términos nominales del periodo seleccionado respecto al mismo periodo del año anterior.">
+                            data-tooltip="Muestra la variación porcentual interanual de los ingresos provinciales disponibles provenientes de la Recaudación provincial, en términos nominales, del período seleccionado respecto al mismo período del año anterior. 
+
+El indicador compara el monto recaudado en el período elegido con el registrado en el mismo período del año previo, sin realizar ajustes por inflación. De esta manera, refleja el crecimiento o la disminución de los recursos en valores corrientes. 
+
+La Recaudación provincial disponible incluye lo recaudado en conceptos de impuestos inmobiliario rural, sellos, ingresos brutos directos e ingresos brutos convenio multilateral menos el 19% correspondiente a los municipios.">
                             ?</div>
                         <div class="kpi-label">Variación Nominal Recaudación Prov.</div>
                         <div class="kpi-value text-success" id="kpi-reca-prov-var-nom-pct">--%</div>
@@ -244,7 +247,11 @@ La coparticipación bruta incluye el total recibido en términos de coparticipac
 
                     <article class="kpi-card" id="card-reca-prov-var-real">
                         <div class="info-tooltip"
-                            data-tooltip="Muestra la variación porcentual interanual de la recaudación provincial en términos reales del período seleccionado respecto al mismo período del año anterior. Deflactada por el IPC del NEA.">
+                            data-tooltip="Muestra la variación porcentual interanual de los ingresos provinciales disponibles provenientes de la Recaudación provincial ,en términos reales, del período seleccionado respecto al mismo período del año anterior. 
+
+Para ello, primero se ajustan (deflactan) los ingresos provinciales disponibles provenientes de la Recaudación provincial utilizando el IPC del NEA, con el objetivo de eliminar el efecto de la inflación. Luego, se calcula la variación entre el período elegido y el mismo período del año anterior. De esta manera, el indicador refleja si hubo un aumento o una disminución en el poder de compra de esos recursos.
+
+La Recaudación provincial disponible incluye lo recaudado en conceptos de impuestos inmobiliario rural, sellos, ingresos brutos directos e ingresos brutos convenio multilateral menos el 19% correspondiente a los municipios.">
                             ?</div>
                         <div class="kpi-label">Variación Real Recaudación Prov.</div>
                         <div class="kpi-value" id="real-var-reca-prov-val">--%</div>

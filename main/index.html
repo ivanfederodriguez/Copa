@@ -85,11 +85,8 @@
                 <!-- 1. Var Real Coparticipación -->
                 <article class="kpi-card" style="flex: 1 1 300px; max-width: 350px;">
                     <div class="info-tooltip"
-                        data-tooltip="Muestra la variación porcentual interanual de la coparticipación en términos reales del período seleccionado respecto al mismo período del año anterior. 
-
-Para ello, primero se ajustan (deflactan) los ingresos provenientes de la coparticipación utilizando el IPC del NEA, con el objetivo de eliminar el efecto de la inflación. Luego, se calcula la variación entre el período elegido y el mismo período del año anterior. De esta manera, el indicador refleja si hubo un aumento o una disminución en el poder de compra de esos recursos.
-
-El valor de coparticipación incluye la suma de los conceptos de: C.F.I. Neta de Ley N° N° 26.075, Financ. Educativo Ley N° 26.075, Reg.Simplif. p/Pequeños Contribuyentes Ley Nº 24.977 y Compensación Consenso Fiscal.">
+                        data-tooltip="Muestra la variación porcentual interanual de los ingresos provinciales totales provenientes tanto de los Recursos de Origen Nacional disponibles (RON) como de los Recursos de Origen Provincial (ROP) en términos reales del período seleccionado respecto al mismo período del año anterior. 
+                        Para ello, primero se ajustan (deflactan) los ingresos provenientes de los Recursos de Origen Nacional y Recursos de Origen Provincial utilizando el IPC nivel general del total País, con el objetivo de eliminar el efecto de la inflación. Luego, se calcula la variación entre el período elegido y el mismo período del año anterior. De esta manera, el indicador refleja si hubo un aumento o una disminución en el poder de compra de esos recursos.">
                         ?</div>
                     <div class="kpi-label">VARIACIÓN REAL RECURSOS TOTALES</div>
                     <div class="kpi-value" id="kpi-copa-var-real">Loading...</div>
@@ -102,8 +99,11 @@ El valor de coparticipación incluye la suma de los conceptos de: C.F.I. Neta de
                 <!-- 2. Cobertura Salarial -->
                 <article class="kpi-card" style="flex: 1 1 300px; max-width: 350px;">
                     <div class="info-tooltip"
-                        data-tooltip="Muestra qué porcentaje de los ingresos de coparticipación se usan para pagar el total de la masa salarial.
-El valor de coparticipación incluye la suma de los conceptos de: C.F.I. Neta de Ley N° N° 26.075, Financ. Educativo Ley N° 26.075, Reg.Simplif. p/Pequeños Contribuyentes Ley Nº 24.977 y Compensación Consenso Fiscal.">
+                        data-tooltip="Muestra que proporción de los recursos de origen nacional disponibles se utilizan para pagar el total de la masa salarial liquidada. Masa salarial total/Recursos totales
+
+La masa salarial incluye los conceptos de salarios,  plus y bonos para los 3 poderes del estado.
+
+El valor de Recursos totales incluye todos los ingresos provenientes de Recursos de Origen Nacional (RON) y los Recursos de Origen Provincial (ROP).">
                         ?</div>
                     <div class="kpi-label">Cobertura Salarial</div>
                     <div class="kpi-value" id="kpi-cobertura">Loading...</div>
@@ -114,9 +114,9 @@ El valor de coparticipación incluye la suma de los conceptos de: C.F.I. Neta de
 
                 <!-- 3. Variación Real Masa Salarial -->
                 <article class="kpi-card" style="flex: 1 1 300px; max-width: 350px;">
-                    <div class="info-tooltip"
-                        data-tooltip="Muestra la variación porcentual interanual de la masa salarial total liquidada en términos reales del período seleccionado respecto al mismo período del año anterior.
-Para ello, la masa salarial liquidada se ajusta por inflación utilizando el IPC del NEA, con el objetivo de obtener su valor real. Luego se compara el período seleccionado con el mismo período del año previo. De esta manera, el indicador permite analizar la evolución de la masa salarial en términos de poder adquisitivo.">
+                    <div class="info-tooltip" data-tooltip="Muestra la variación porcentual interanual de la masa salarial total liquidada en términos reales del período seleccionado respecto al mismo período del año anterior.
+Para ello, la masa salarial liquidada se ajusta por inflación utilizando el IPC general del NEA, con el objetivo de obtener su valor real. Luego se compara el período seleccionado con el mismo período del año previo. De esta manera, el indicador permite analizar la evolución de la masa salarial en términos de poder adquisitivo.
+La masa salarial total incluye los conceptos de salarios,  plus y bonos para los 3 poderes del estado.">
                         ?</div>
                     <div class="kpi-label">VARIACIÓN REAL MASA SALARIAL</div>
                     <div class="kpi-value" id="kpi-masa-var-real">Loading...</div>
@@ -154,7 +154,7 @@ La CBT digital es calculada por el IPECD para la Ciudad de Corrientes.">
                 <!-- Coparticipación vs Inflación (Moved here) -->
                 <div class="chart-container" style="margin-bottom: 0;">
                     <div class="info-tooltip"
-                        data-tooltip="Permite comparar la evolución mensual de la variación interanual de los ingresos provinciales por coparticipación y del IPC del NEA.">
+                        data-tooltip="Permite comparar la evolución de la variación interanual de los ingresos provinciales tanto los provenientes de los Recursos de Origen Nacional como los de Recursos de Origen Provincial.  y el IPC nivel general del total país.">
                         ?</div>
                     <div class="section-header">
                         <div>
@@ -195,8 +195,7 @@ La CBT es calculada por el IPECD para la provincia de Corrientes.">
                 <!-- Coverage Chart -->
                 <div class="chart-container" style="margin-bottom: 0;">
                     <div class="info-tooltip"
-                        data-tooltip="Muestra la evolución a lo largo del tiempo del porcentaje de los ingresos de coparticipación que se usan para pagar el total de la masa salarial y la distribución a municipios.
-El valor de coparticipación incluye la suma de los conceptos de: C.F.I. Neta de Ley N° N° 26.075, Financ. Educativo Ley N° 26.075, Reg.Simplif. p/Pequeños Contribuyentes Ley Nº 24.977 y Compensación Consenso Fiscal.">
+                        data-tooltip="Muestra la evolución a lo largo del tiempo del porcentaje de los ingresos provinciales provenientes de los recursos tanto de RON como de ROP, que se utilizan para pagar el total de la masa salarial y la distribución a municipios.">
                         ?</div>
                     <div class="section-header">
                         <div>

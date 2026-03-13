@@ -583,10 +583,12 @@ function renderKPIs(kpi, isPeriodComplete, periodId) {
         }
     }
 
-    // --- Presupuesto vs Real (Only 2026 Complete Months) ---
+
+    // --- Presupuesto vs Real (Habilitado para 2025 y 2026) ---
     const presupuestoSection = document.getElementById('presupuesto-section');
     if (presupuestoSection && periodId) {
-        if (periodId.startsWith('2026') && isPeriodComplete) {
+        // Corregimos la condición para aceptar ambos años
+        if ((periodId.startsWith('2026') || periodId.startsWith('2025')) && isPeriodComplete) {
             presupuestoSection.style.display = 'block';
 
             const bruta = kpi.recaudacion.bruta_current || 0;
@@ -596,7 +598,7 @@ function renderKPIs(kpi, isPeriodComplete, periodId) {
             const diffPct = esperada > 0 ? ((bruta / esperada) - 1) * 100 : 0;
 
             const pctSign = diffPct > 0 ? '+' : '';
-            const absSign = diffAbs > 0 ? '+' : '';
+            const absSign = diffAbs > 0 ? '+' : (diffAbs < 0 ? '-' : '');
 
             const kpiNom = document.getElementById('kpi-brecha-nom');
             if (kpiNom) {
@@ -606,7 +608,6 @@ function renderKPIs(kpi, isPeriodComplete, periodId) {
 
             const kpiPct = document.getElementById('kpi-brecha-pct');
             if (kpiPct) {
-                // Remove replace('-', '') to preserve negative sign when formatPercentage is used
                 kpiPct.textContent = pctSign + formatPercentage(diffPct).replace('+', '');
                 kpiPct.className = `kpi-value ${diffPct >= 0 ? 'text-success' : 'text-danger'}`;
             }
@@ -617,7 +618,7 @@ function renderKPIs(kpi, isPeriodComplete, periodId) {
             const valEsperada = document.getElementById('kpi-esperada');
             if (valEsperada) valEsperada.textContent = formatMillions(esperada);
 
-            // Provincial Budget vs Real (ROP)
+            // Presupuesto Provincial (ROP)
             if (kpi.rop) {
                 const recaProvCurr = kpi.rop.bruta_current || 0;
                 const esperadaProv = kpi.rop.esperada_prov || 0;
@@ -646,13 +647,12 @@ function renderKPIs(kpi, isPeriodComplete, periodId) {
                 const valEsperadaProv = document.getElementById('kpi-esperada-prov');
                 if (valEsperadaProv) valEsperadaProv.textContent = formatMillions(esperadaProv);
             }
-
         } else {
+            // Si no cumple la condición de año o está incompleto, ocultamos la sección
             presupuestoSection.style.display = 'none';
         }
     }
 }
-
 let dailyChartInstance = null;
 
 // Helper: group array values in chunks of N (summing), and produce range labels
