@@ -32,6 +32,15 @@ def get_pg_connection():
         dbname=os.getenv("PG_DATABASE")
     )
 
+def get_pg_ipc_connection():
+    return psycopg2.connect(
+        host=os.getenv("PG_HOST"),
+        port=os.getenv("PG_PORT"),
+        user=os.getenv("PG_USER"),
+        password=os.getenv("PG_PASSWORD"),
+        dbname="datalake_economico"
+    )
+
 def fetch_coparticipacion_daily():
     """
     Fetches daily coparticipation data for Current and Previous Year.
@@ -280,21 +289,17 @@ def fetch_ipc():
     """
     query = """
     SELECT 
-        YEAR(fecha) as year, 
-        MONTH(fecha) as month, 
+        EXTRACT(YEAR FROM fecha)::int as year, 
+        EXTRACT(MONTH FROM fecha)::int as month, 
         id_region,
         valor as ipc_valor
-    FROM ipc_valores
+    FROM ipc
     WHERE id_region IN (1, 5) AND id_categoria = 1 AND id_division = 1
-      AND YEAR(fecha) >= 2020
+      AND EXTRACT(YEAR FROM fecha) >= 2020
     """
-    conn = get_connection()
+    conn = get_pg_ipc_connection()
     try:
-        cursor = conn.cursor()
-        cursor.execute(query)
-        columns = [col[0] for col in cursor.description]
-        data = cursor.fetchall()
-        df = pd.DataFrame(data, columns=columns)
+        df = pd.read_sql(query, conn)
         
         # --- PROYECCIONES REM (COMPOUNDING) ---
         new_ipc_rows = []

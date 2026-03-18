@@ -1,6 +1,7 @@
 import time
 import os
 import mysql.connector
+import psycopg2
 import pandas as pd
 from datetime import datetime
 from mysql.connector import Error
@@ -36,6 +37,15 @@ def get_connection(max_retries=3):
                 print("Max retries reached. Exiting.")
                 raise e
 
+def get_pg_ipc_connection():
+    return psycopg2.connect(
+        host=os.getenv("PG_HOST"),
+        port=os.getenv("PG_PORT"),
+        user=os.getenv("PG_USER"),
+        password=os.getenv("PG_PASSWORD"),
+        dbname="datalake_economico"
+    )
+
 def fetch_data():
     query = """
     SELECT 
@@ -65,25 +75,19 @@ def fetch_ipc_region5():
     # Fetch IPC data for Region 5 (NEA), Category 1 (General), Division 1
     query = """
     SELECT 
-        YEAR(fecha) as anio, 
-        MONTH(fecha) as mes, 
+        EXTRACT(YEAR FROM fecha)::int as anio, 
+        EXTRACT(MONTH FROM fecha)::int as mes, 
         valor as ipc_valor_nea,
         var_mensual as ipc_var_mensual_nea
-    FROM ipc_valores
+    FROM ipc
     WHERE id_region = 5 AND id_categoria = 1 AND id_division = 1
     ORDER BY fecha
     """
-    conn = get_connection()
+    conn = get_pg_ipc_connection()
     try:
-        cursor = conn.cursor()
-        cursor.execute(query)
-        columns = [col[0] for col in cursor.description]
-        data = cursor.fetchall()
-        df = pd.DataFrame(data, columns=columns)
+        df = pd.read_sql(query, conn)
         return df
     finally:
-        if 'cursor' in locals():
-            cursor.close()
         conn.close()
 
 def fetch_ripte():
