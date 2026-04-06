@@ -272,29 +272,56 @@ def fetch_recaudacion_provincial():
     
     return grouped
 
-# Diccionario de proyecciones intermensuales del REM (BCRA) para rellenar faltantes temporales.
-# Formato: (Año, Mes): Variación Mensual (ej: 0.027 para 2.7%)
-REM_PROJECTIONS_MOM = {
-    (2026, 2): 0.027
-}
+def fetch_rem_projections():
+    """
+    Fetch REM (Relevamiento de Expectativas de Mercado) monthly CPI projections from PostgreSQL.
+    
+    Data Source: datalake_economico.rem_precios_minoristas
+    Uses the latest survey (max fecha_consulta) which typically contains 6-7 months
+    of projections (1-2 backward, 4-5 forward).
+    
+    Returns:
+        dict: {(year, month): decimal_variation} e.g. {(2026, 3): 0.027} for 2.7%
+    """
+    query = """
+    SELECT fecha, mediana
+    FROM rem_precios_minoristas
+    WHERE fecha_consulta = (SELECT MAX(fecha_consulta) FROM rem_precios_minoristas)
+    ORDER BY fecha ASC
+    """
+    conn = get_pg_ipc_connection()
+    try:
+        df = pd.read_sql(query, conn)
+        projections = {}
+        for _, row in df.iterrows():
+            fecha = pd.to_datetime(row['fecha'])
+            # mediana comes as percentage (e.g. 2.7 for 2.7%), convert to decimal
+            projections[(fecha.year, fecha.month)] = float(row['mediana']) / 100
+        print(f"  REM: Loaded {len(projections)} monthly projections from latest survey")
+        return projections
+    except Exception as e:
+        print(f"  WARNING: Could not fetch REM projections: {e}")
+        return {}
+    finally:
+        conn.close()
 
 def fetch_ipc():
     """
     Fetch IPC (Índice de Precios al Consumidor) from the database.
-    Extracts data for Region 1 (Nación) and Region 5 (NEA) to deflate nominal values separately.
-    If official data for recent months is missing, it seamlessly calculates an estimate using REM_PROJECTIONS_MOM.
+    Uses only Region 1 (Nación) for all deflation calculations.
+    If official data for recent months is missing, it seamlessly estimates using
+    REM projections from rem_precios_minoristas (BCRA survey).
     
     Returns:
-        pd.DataFrame: IPC values by year, month, and region since 2020.
+        pd.DataFrame: IPC values by year and month since 2020 (Nación only).
     """
     query = """
     SELECT 
         EXTRACT(YEAR FROM fecha)::int as year, 
         EXTRACT(MONTH FROM fecha)::int as month, 
-        id_region,
         valor as ipc_valor
     FROM ipc
-    WHERE id_region IN (1, 5) AND id_categoria = 1 AND id_division = 1
+    WHERE id_region = 1 AND id_categoria = 1 AND id_division = 1
       AND EXTRACT(YEAR FROM fecha) >= 2020
     """
     conn = get_pg_ipc_connection()
@@ -302,42 +329,42 @@ def fetch_ipc():
         df = pd.read_sql(query, conn)
         
         # --- PROYECCIONES REM (COMPOUNDING) ---
+        rem_projections = fetch_rem_projections()
+        
+        df_sorted = df.sort_values(['year', 'month'])
+        if df_sorted.empty:
+            return df
+            
+        # Find the last official entry
+        last_row = df_sorted.iloc[-1]
+        last_year = int(last_row['year'])
+        last_month = int(last_row['month'])
+        current_val = float(last_row['ipc_valor'])
+        
+        print(f"  IPC: Last official data: {last_year}-{last_month:02d} (valor={current_val:.2f})")
+        
+        # Walk forward from last official month, compounding REM projections
         new_ipc_rows = []
-        for region_id in [1, 5]:
-            # Get data for this region
-            df_reg = df[df['id_region'] == region_id].sort_values(['year', 'month'])
-            if df_reg.empty:
-                continue
-                
-            # Find the last official entry
-            last_row = df_reg.iloc[-1]
-            last_year = int(last_row['year'])
-            last_month = int(last_row['month'])
-            current_val = float(last_row['ipc_valor'])
+        curr_y = last_year
+        curr_m = last_month
+        
+        while True:
+            curr_m += 1
+            if curr_m > 12:
+                curr_m = 1
+                curr_y += 1
             
-            # Form a datetime-like timeline to walk forward looking for REM projections
-            # Stop if we hit a future far away or when no more projections exist
-            curr_y = last_year
-            curr_m = last_month
-            
-            while True:
-                curr_m += 1
-                if curr_m > 12:
-                    curr_m = 1
-                    curr_y += 1
-                
-                # Check if this missing month has a forecast
-                if (curr_y, curr_m) in REM_PROJECTIONS_MOM:
-                    monthly_var = REM_PROJECTIONS_MOM[(curr_y, curr_m)]
-                    current_val = current_val * (1 + monthly_var)
-                    new_ipc_rows.append({
-                        'year': curr_y,
-                        'month': curr_m,
-                        'id_region': region_id,
-                        'ipc_valor': current_val
-                    })
-                else:
-                    break # Gap en proyecciones o llegamos al futuro sin REM
+            if (curr_y, curr_m) in rem_projections:
+                monthly_var = rem_projections[(curr_y, curr_m)]
+                current_val = current_val * (1 + monthly_var)
+                new_ipc_rows.append({
+                    'year': curr_y,
+                    'month': curr_m,
+                    'ipc_valor': current_val
+                })
+                print(f"  IPC: Projected {curr_y}-{curr_m:02d} with REM {monthly_var*100:.1f}% → {current_val:.2f}")
+            else:
+                break
                     
         if new_ipc_rows:
             df_new = pd.DataFrame(new_ipc_rows)
@@ -501,33 +528,18 @@ def process_data(df_daily, df_salary, df_ipc, df_esperada, df_reca_prov):
         unified_dist_muni_prev = total_dist_muni_prev_full + dist_muni_prov_prev
         unified_dist_muni_curr = total_dist_muni_curr + dist_muni_prov_curr
 
-        # IPC & Real Variation (Dual Region: 1 for Coparticipation, 5 for Salary/Municipal)
-        ipc_nacion = df_ipc[df_ipc['id_region'] == 1]
-        ipc_nea = df_ipc[df_ipc['id_region'] == 5]
+        # IPC & Real Variation (Unified: Nación for all calculations)
+        ipc_prev_row = df_ipc[(df_ipc['year'] == prev_year) & (df_ipc['month'] == m)]
+        ipc_curr_row = df_ipc[(df_ipc['year'] == iter_year) & (df_ipc['month'] == m)]
         
-        ipc_nacion_prev_row = ipc_nacion[(ipc_nacion['year'] == prev_year) & (ipc_nacion['month'] == m)]
-        ipc_nacion_curr_row = ipc_nacion[(ipc_nacion['year'] == iter_year) & (ipc_nacion['month'] == m)]
-        
-        ipc_nea_prev_row = ipc_nea[(ipc_nea['year'] == prev_year) & (ipc_nea['month'] == m)]
-        ipc_nea_curr_row = ipc_nea[(ipc_nea['year'] == iter_year) & (ipc_nea['month'] == m)]
-        
-        val_ipc_nacion_prev = ipc_nacion_prev_row['ipc_valor'].values[0] if not ipc_nacion_prev_row.empty else None
-        val_ipc_nacion_curr = ipc_nacion_curr_row['ipc_valor'].values[0] if not ipc_nacion_curr_row.empty else None
-        
-        val_ipc_nea_prev = ipc_nea_prev_row['ipc_valor'].values[0] if not ipc_nea_prev_row.empty else None
-        val_ipc_nea_curr = ipc_nea_curr_row['ipc_valor'].values[0] if not ipc_nea_curr_row.empty else None
+        val_ipc_prev = ipc_prev_row['ipc_valor'].values[0] if not ipc_prev_row.empty else None
+        val_ipc_curr = ipc_curr_row['ipc_valor'].values[0] if not ipc_curr_row.empty else None
 
-        var_ipc_nacion_ia = 0
-        ipc_nacion_missing = True 
-        if val_ipc_nacion_prev and val_ipc_nacion_curr:
-            var_ipc_nacion_ia = (val_ipc_nacion_curr / val_ipc_nacion_prev) - 1
-            ipc_nacion_missing = False
-            
-        var_ipc_nea_ia = 0
-        ipc_nea_missing = True 
-        if val_ipc_nea_prev and val_ipc_nea_curr:
-            var_ipc_nea_ia = (val_ipc_nea_curr / val_ipc_nea_prev) - 1
-            ipc_nea_missing = False
+        var_ipc_ia = 0
+        ipc_missing = True 
+        if val_ipc_prev and val_ipc_curr:
+            var_ipc_ia = (val_ipc_curr / val_ipc_prev) - 1
+            ipc_missing = False
         
         # Variations Recaudacion (Using Full Previous)
         if total_recaudacion_prev_full > 0:
@@ -537,8 +549,8 @@ def process_data(df_daily, df_salary, df_ipc, df_esperada, df_reca_prov):
             rec_var_nom = 0
             rec_diff_nom = 0
             
-        # Real Variation using IPC Nacion for Coparticipation
-        rec_var_real = ((1 + rec_var_nom) / (1 + var_ipc_nacion_ia) - 1) if not ipc_nacion_missing else None
+        # Real Variation using IPC Nación
+        rec_var_real = ((1 + rec_var_nom) / (1 + var_ipc_ia) - 1) if not ipc_missing else None
         
         # Variations ROP (formerly Recaudacion Provincial)
         if rop_bruta_prev > 0:
@@ -548,8 +560,8 @@ def process_data(df_daily, df_salary, df_ipc, df_esperada, df_reca_prov):
             rop_var_nom = 0
             rop_diff_nom = 0
             
-        # Real Variation using IPC NEA for ROP
-        rop_var_real = ((1 + rop_var_nom) / (1 + var_ipc_nea_ia) - 1) if not ipc_nea_missing else None
+        # Real Variation using IPC Nación for ROP
+        rop_var_real = ((1 + rop_var_nom) / (1 + var_ipc_ia) - 1) if not ipc_missing else None
         
         # Variations Dist Muni (Unified)
         if unified_dist_muni_prev > 0:
@@ -559,19 +571,14 @@ def process_data(df_daily, df_salary, df_ipc, df_esperada, df_reca_prov):
             dist_muni_var_nom = 0
             dist_muni_diff_nom = 0
             
-        # Real Variation Dist Muni Unified (Weighted by Source IPCs)
-        if unified_dist_muni_prev > 0 and not ipc_nacion_missing and not ipc_nea_missing:
-            # Adjust each previous component by its respective IPC
-            real_dist_muni_nac_prev_adj = total_dist_muni_prev_full * (1 + var_ipc_nacion_ia)
-            real_dist_muni_prov_prev_adj = dist_muni_prov_prev * (1 + var_ipc_nea_ia)
-            unified_dist_muni_prev_adj = real_dist_muni_nac_prev_adj + real_dist_muni_prov_prev_adj
+        # Real Variation Dist Muni Unified (using IPC Nación)
+        if unified_dist_muni_prev > 0 and not ipc_missing:
+            unified_dist_muni_prev_adj = unified_dist_muni_prev * (1 + var_ipc_ia)
             
-            # Now calculate the real variation
             dist_muni_var_real = (unified_dist_muni_curr / unified_dist_muni_prev_adj) - 1
             dist_muni_diff_real = unified_dist_muni_curr - unified_dist_muni_prev_adj
             dist_muni_var_real_fallback = False
         else:
-            # Fallback if any IPC is missing
             dist_muni_var_real = None
             dist_muni_diff_real = None
             dist_muni_var_real_fallback = True
@@ -579,8 +586,8 @@ def process_data(df_daily, df_salary, df_ipc, df_esperada, df_reca_prov):
         # Variations Salario
         if not is_masa_incomplete and total_salary_prev > 0:
             sal_var_nom = (total_salary_curr / total_salary_prev - 1)
-            # Real Variation using IPC NEA for Masa Salarial
-            sal_var_real = ((1 + sal_var_nom) / (1 + var_ipc_nea_ia) - 1) if not ipc_nea_missing else None
+            # Real Variation using IPC Nación for Masa Salarial
+            sal_var_real = ((1 + sal_var_nom) / (1 + var_ipc_ia) - 1) if not ipc_missing else None
             sal_diff_nom = total_salary_curr - total_salary_prev
         else:
             sal_var_nom = 0
@@ -591,10 +598,8 @@ def process_data(df_daily, df_salary, df_ipc, df_esperada, df_reca_prov):
         total_bruta_comb_prev = total_bruta_prev_full + rop_bruta_prev
         total_bruta_comb_curr = total_bruta_curr + rop_bruta_curr
         
-        if total_bruta_comb_prev > 0 and not ipc_nacion_missing and not ipc_nea_missing:
-             bruta_ron_prev_adj = total_bruta_prev_full * (1 + var_ipc_nacion_ia)
-             bruta_rop_prev_adj = rop_bruta_prev * (1 + var_ipc_nea_ia)
-             total_bruta_prev_adj = bruta_ron_prev_adj + bruta_rop_prev_adj
+        if total_bruta_comb_prev > 0 and not ipc_missing:
+             total_bruta_prev_adj = total_bruta_comb_prev * (1 + var_ipc_ia)
              total_recursos_var_real = (total_bruta_comb_curr / total_bruta_prev_adj) - 1
         else:
              total_recursos_var_real = None
@@ -623,8 +628,8 @@ def process_data(df_daily, df_salary, df_ipc, df_esperada, df_reca_prov):
                     "var_nom": rec_var_nom * 100,
                     "var_real": (rec_var_real * 100) if rec_var_real is not None else None,
                     "diff_nom": rec_diff_nom / 1_000_000,
-                    "ipc_missing": ipc_nacion_missing,
-                    "ipc_used_for_calc": var_ipc_nacion_ia * 100,
+                    "ipc_missing": ipc_missing,
+                    "ipc_used_for_calc": var_ipc_ia * 100,
                     "esperada": total_esperada_curr / 1_000_000,
                     "brecha_abs": (total_neta_curr - total_esperada_curr) / 1_000_000,
                     "brecha_pct": ((total_neta_curr / total_esperada_curr) - 1) * 100 if total_esperada_curr > 0 else 0
@@ -637,10 +642,10 @@ def process_data(df_daily, df_salary, df_ipc, df_esperada, df_reca_prov):
                     "var_nom": rop_var_nom * 100,
                     "var_real": (rop_var_real * 100) if rop_var_real is not None else None,
                     "diff_nom": rop_diff_nom / 1_000_000,
-                    "diff_real": (rop_var_real * (rop_bruta_prev / (1 + var_ipc_nea_ia)) / 1_000_000) if rop_var_real is not None else 0,
+                    "diff_real": (rop_var_real * (rop_bruta_prev / (1 + var_ipc_ia)) / 1_000_000) if rop_var_real is not None else 0,
 
-                    "ipc_missing": ipc_nea_missing,
-                    "ipc_used_for_calc": var_ipc_nea_ia * 100,
+                    "ipc_missing": ipc_missing,
+                    "ipc_used_for_calc": var_ipc_ia * 100,
                     "esperada_prov": total_esperada_prov_curr / 1_000_000,
                     "brecha_abs_prov": (rop_bruta_curr - total_esperada_prov_curr) / 1_000_000,
                     "brecha_pct_prov": ((rop_bruta_curr / total_esperada_prov_curr) - 1) * 100 if total_esperada_prov_curr > 0 else 0
@@ -674,8 +679,8 @@ def process_data(df_daily, df_salary, df_ipc, df_esperada, df_reca_prov):
                     "prev": total_salary_prev / 1_000_000,
                     "var_nom": sal_var_nom * 100,
                     "var_real": (sal_var_real * 100) if sal_var_real is not None else None,
-                    "ipc_missing": ipc_nea_missing,
-                    "ipc_used_for_calc": var_ipc_nea_ia * 100,
+                    "ipc_missing": ipc_missing,
+                    "ipc_used_for_calc": var_ipc_ia * 100,
                     "diff_nom": sal_diff_nom / 1_000_000,
                     "cobertura_current": cov_curr * 100,
                     "cobertura_prev": cov_prev * 100,
@@ -685,7 +690,7 @@ def process_data(df_daily, df_salary, df_ipc, df_esperada, df_reca_prov):
                 },
                 "meta": {
                     "periodo": f"{month_label} {iter_year}",
-                    "ipc_ia": var_ipc_nacion_ia * 100 # This was previously var_ipc_ia, now explicitly nacion
+                    "ipc_ia": var_ipc_ia * 100
                 }
             },
             "charts": {
@@ -806,12 +811,9 @@ def process_annual_monitor_data(df_daily, df_salary, df_ipc, df_esperada, df_rec
         recaudacion_neta_prev = 0
         recaudacion_bruta_curr = 0
         recaudacion_bruta_prev = 0
-        avg_ipc_nacion_used = 0
-        ipc_nacion_count = 0
-        avg_ipc_nea_used = 0
-        ipc_nea_count = 0
-        ipc_nacion_missing_flag = False
-        ipc_nea_missing_flag = False
+        avg_ipc_used = 0
+        ipc_count = 0
+        ipc_missing_flag = False
         distribucion_municipal_curr = 0
         distribucion_municipal_prev = 0
         distribucion_municipal_nacion_curr = 0
@@ -822,10 +824,8 @@ def process_annual_monitor_data(df_daily, df_salary, df_ipc, df_esperada, df_rec
         recaudacion_provincial_curr = 0
         recaudacion_provincial_prev = 0
         
-        real_nacion_prev_adjusted = 0
-        real_nea_prev_adjusted = 0
-        real_muni_nacion_prev_adjusted = 0
-        real_muni_prov_prev_adjusted = 0
+        real_prev_adjusted = 0
+        real_muni_prev_adjusted = 0
         real_reca_prov_prev_adjusted = 0
         
         masa_curr = 0
@@ -849,9 +849,6 @@ def process_annual_monitor_data(df_daily, df_salary, df_ipc, df_esperada, df_rec
         sum_esperada_prov = 0
         sum_salario = 0
 
-        ipc_missing_flag = False
-        avg_ipc_used = 0
-        ipc_count = 0
 
         for m in range(1, 13):
             labels_months.append(MONTH_NAMES[m])
@@ -951,62 +948,40 @@ def process_annual_monitor_data(df_daily, df_salary, df_ipc, df_esperada, df_rec
                 # (Skipping deep accumulation fallback for post_sueldos_total for now unless strictly needed)
                 masa_prev += m_prev
                 
-                # IPC Dual Logic for Real Variation
-                ipc_nacion = df_ipc[df_ipc['id_region'] == 1]
-                ipc_nea = df_ipc[df_ipc['id_region'] == 5]
+                # IPC Unified Logic (Nación only)
+                ipc_c = df_ipc[(df_ipc['year'] == iter_year) & (df_ipc['month'] == m)]
+                ipc_p = df_ipc[(df_ipc['year'] == prev_year) & (df_ipc['month'] == m)]
                 
-                ipc_nacion_c = ipc_nacion[(ipc_nacion['year'] == iter_year) & (ipc_nacion['month'] == m)]
-                ipc_nacion_p = ipc_nacion[(ipc_nacion['year'] == prev_year) & (ipc_nacion['month'] == m)]
+                val_ipc_c = ipc_c['ipc_valor'].values[0] if not ipc_c.empty else None
+                val_ipc_p = ipc_p['ipc_valor'].values[0] if not ipc_p.empty else None
                 
-                ipc_nea_c = ipc_nea[(ipc_nea['year'] == iter_year) & (ipc_nea['month'] == m)]
-                ipc_nea_p = ipc_nea[(ipc_nea['year'] == prev_year) & (ipc_nea['month'] == m)]
-                
-                val_ipc_nacion_c = ipc_nacion_c['ipc_valor'].values[0] if not ipc_nacion_c.empty else None
-                val_ipc_nacion_p = ipc_nacion_p['ipc_valor'].values[0] if not ipc_nacion_p.empty else None
-                
-                val_ipc_nea_c = ipc_nea_c['ipc_valor'].values[0] if not ipc_nea_c.empty else None
-                val_ipc_nea_p = ipc_nea_p['ipc_valor'].values[0] if not ipc_nea_p.empty else None
-                
-                var_ipc_nacion_ia = 0
-                if val_ipc_nacion_c and val_ipc_nacion_p:
-                    var_ipc_nacion_ia = (val_ipc_nacion_c / val_ipc_nacion_p) - 1
+                var_ipc_ia = 0
+                if val_ipc_c and val_ipc_p:
+                    var_ipc_ia = (val_ipc_c / val_ipc_p) - 1
                 else:
-                    ipc_nacion_missing_flag = True
-                    var_ipc_nacion_ia = 0
-                    
-                var_ipc_nea_ia = 0
-                if val_ipc_nea_c and val_ipc_nea_p:
-                    var_ipc_nea_ia = (val_ipc_nea_c / val_ipc_nea_p) - 1
-                else:
-                    ipc_nea_missing_flag = True
-                    var_ipc_nea_ia = 0
+                    ipc_missing_flag = True
+                    var_ipc_ia = 0
                 
-                avg_ipc_nacion_used += var_ipc_nacion_ia
-                ipc_nacion_count += 1
+                avg_ipc_used += var_ipc_ia
+                ipc_count += 1
                 
-                avg_ipc_nea_used += var_ipc_nea_ia
-                ipc_nea_count += 1
-                
-                real_nacion_prev_adjusted += val_prev * (1 + var_ipc_nacion_ia)
-                real_muni_nacion_prev_adjusted += val_muni_nacion_prev * (1 + var_ipc_nacion_ia)
-                real_muni_prov_prev_adjusted += val_muni_prov_prev * (1 + var_ipc_nea_ia)
-                real_reca_prov_prev_adjusted += val_rop_bruta_prev * (1 + var_ipc_nea_ia)
-                real_nea_prev_adjusted += val_prev * (1 + var_ipc_nea_ia) # Used optionally for other things
+                real_prev_adjusted += val_prev * (1 + var_ipc_ia)
+                real_muni_prev_adjusted += val_muni_prev * (1 + var_ipc_ia)
+                real_reca_prov_prev_adjusted += val_rop_bruta_prev * (1 + var_ipc_ia)
 
-        avg_ipc_nacion_ia = (avg_ipc_nacion_used / ipc_nacion_count) if ipc_nacion_count > 0 else 0
-        avg_ipc_nea_ia = (avg_ipc_nea_used / ipc_nea_count) if ipc_nea_count > 0 else 0
+        avg_ipc_ia = (avg_ipc_used / ipc_count) if ipc_count > 0 else 0
         
         diff_nom_rec = recaudacion_curr - recaudacion_prev
         var_nom_rec = (diff_nom_rec / recaudacion_prev * 100) if recaudacion_prev > 0 else 0
         
-        diff_real_rec = recaudacion_curr - real_nacion_prev_adjusted
-        var_real_rec = (diff_real_rec / real_nacion_prev_adjusted * 100) if real_nacion_prev_adjusted > 0 else 0
+        diff_real_rec = recaudacion_curr - real_prev_adjusted
+        var_real_rec = (diff_real_rec / real_prev_adjusted * 100) if real_prev_adjusted > 0 else 0
         
         # Distribucion Municipal Unified
         diff_nom_muni = distribucion_municipal_curr - distribucion_municipal_prev
         var_nom_muni = (diff_nom_muni / distribucion_municipal_prev * 100) if distribucion_municipal_prev > 0 else 0
         
-        real_muni_unified_prev_adjusted = real_muni_nacion_prev_adjusted + real_muni_prov_prev_adjusted
+        real_muni_unified_prev_adjusted = real_muni_prev_adjusted
         diff_real_muni = distribucion_municipal_curr - real_muni_unified_prev_adjusted
         var_real_muni = (diff_real_muni / real_muni_unified_prev_adjusted * 100) if real_muni_unified_prev_adjusted > 0 else 0
         # Summary KPIs
@@ -1038,7 +1013,7 @@ def process_annual_monitor_data(df_daily, df_salary, df_ipc, df_esperada, df_rec
         diff_nom_masa = masa_curr - masa_prev
         var_nom_masa = (diff_nom_masa / masa_prev * 100) if masa_prev > 0 else 0
         
-        masa_prev_adjusted = masa_prev * (1 + avg_ipc_nea_ia)
+        masa_prev_adjusted = masa_prev * (1 + avg_ipc_ia)
         diff_real_masa = masa_curr - masa_prev_adjusted
         var_real_masa = (diff_real_masa / masa_prev_adjusted * 100) if masa_prev_adjusted > 0 else 0
         
@@ -1067,8 +1042,8 @@ def process_annual_monitor_data(df_daily, df_salary, df_ipc, df_esperada, df_rec
                     "diff_nom": diff_nom_rec / 1_000_000,
                     "var_nom": var_nom_rec,
                     "var_real": var_real_rec,
-                    "ipc_missing": ipc_nacion_missing_flag,
-                    "avg_ipc_used": avg_ipc_nacion_ia * 100,
+                    "ipc_missing": ipc_missing_flag,
+                    "avg_ipc_used": avg_ipc_ia * 100,
                     "esperada": sum_esperada / 1_000_000 if sum_esperada > 0 else 0,
                     "brecha_abs": (recaudacion_neta_curr - sum_esperada) / 1_000_000 if sum_esperada > 0 else 0,
                     "brecha_pct": ((recaudacion_neta_curr / sum_esperada) - 1) * 100 if sum_esperada > 0 else 0
@@ -1081,8 +1056,8 @@ def process_annual_monitor_data(df_daily, df_salary, df_ipc, df_esperada, df_rec
                     "var_nom": var_nom_reca_prov,
                     "var_real": var_real_reca_prov,
                     "diff_nom": diff_nom_reca_prov / 1_000_000,
-                    "ipc_missing": ipc_nea_missing_flag,
-                    "avg_ipc_used": avg_ipc_nea_ia * 100,
+                    "ipc_missing": ipc_missing_flag,
+                    "avg_ipc_used": avg_ipc_ia * 100,
                     "esperada_prov": sum_esperada_prov / 1_000_000 if sum_esperada_prov > 0 else 0,
                     "brecha_abs_prov": (recaudacion_provincial_curr - sum_esperada_prov) / 1_000_000 if sum_esperada_prov > 0 else 0,
                     "brecha_pct_prov": ((recaudacion_provincial_curr / sum_esperada_prov) - 1) * 100 if sum_esperada_prov > 0 else 0
@@ -1098,7 +1073,7 @@ def process_annual_monitor_data(df_daily, df_salary, df_ipc, df_esperada, df_rec
                     "diff_real": diff_real_muni / 1_000_000,
                     "var_nom": var_nom_muni,
                     "var_real": var_real_muni,
-                    "ipc_missing": ipc_nacion_missing_flag or ipc_nea_missing_flag,
+                    "ipc_missing": ipc_missing_flag,
                     "ipc_used_for_calc": 0
                 },
                 "masa_salarial": {
@@ -1107,8 +1082,8 @@ def process_annual_monitor_data(df_daily, df_salary, df_ipc, df_esperada, df_rec
                     "diff_nom": diff_nom_masa / 1_000_000,
                     "var_nom": var_nom_masa,
                     "var_real": var_real_masa,
-                    "ipc_missing": ipc_nea_missing_flag,
-                    "avg_ipc_used": avg_ipc_nea_ia * 100,
+                    "ipc_missing": ipc_missing_flag,
+                    "avg_ipc_used": avg_ipc_ia * 100,
                     "cobertura_current": coverage_y_curr * 100,
                     "cobertura_prev": coverage_y_prev * 100,
                     "is_incomplete": (masa_curr == 0),
@@ -1267,9 +1242,8 @@ def process_chart_data(df_daily, df_ipc, df_reca_prov=None):
     # 4. Filter only complete months
     df_monthly = df_monthly[df_monthly['is_complete'] == True].copy()
     
-    # 5. Merge with IPC (Use only Nacion for Coparticipation variation)
-    df_ipc_nacion = df_ipc[df_ipc['id_region'] == 1].copy()
-    df_combined = pd.merge(df_monthly, df_ipc_nacion, on=['year', 'month'], how='left')
+    # 5. Merge with IPC (Nación)
+    df_combined = pd.merge(df_monthly, df_ipc, on=['year', 'month'], how='left')
     df_combined = df_combined.sort_values(['year', 'month'])
     
     # 6. Calculate interannual variations (year-over-year)
@@ -1479,9 +1453,8 @@ def process_personal_kpis(df_salary_details, df_cbt, df_ipc):
     df['cantidad_empleados'] = df['cantidad_empleados'].replace(0, np.nan)
     df['salario_promedio'] = df['masa_para_promedio'] / df['cantidad_empleados']
     
-    # Merge IPC (Use NEA for generic salary data against CBT)
-    ipc_nea = df_ipc[df_ipc['id_region'] == 5].copy()
-    df = pd.merge(df, ipc_nea, left_on=['anio', 'mes'], right_on=['year', 'month'], how='left')
+    # Merge IPC (Nación for salary deflation)
+    df = pd.merge(df, df_ipc, left_on=['anio', 'mes'], right_on=['year', 'month'], how='left')
     df = pd.merge(df, df_cbt, left_on=['anio', 'mes'], right_on=['year', 'month'], how='left')
     
     df.sort_values(by=['anio', 'mes'], inplace=True)
@@ -1536,7 +1509,7 @@ def main():
     print("Fetching Provincial Recaudacion...")
     df_reca_prov = fetch_recaudacion_provincial()
     
-    print("Fetching Dual-Region IPC Data...")
+    print("Fetching IPC Nación + REM Projections...")
     df_ipc = fetch_ipc()
     
     print("Processing Data...")
@@ -1578,28 +1551,68 @@ def main():
         
     print(f"Data saved to {output_path}")
 
-    # Temporary Gasto Dashboard update
-    print("Processing Gasto Data...")
-    gasto_excel_path = os.path.join(os.path.dirname(__file__), 'Gastos.xlsx')
-    if os.path.exists(gasto_excel_path):
-        try:
-            df_gasto = pd.read_excel(gasto_excel_path)
-            df_gasto["periodo"] = df_gasto["periodo"].dt.strftime("%Y-%m")
+    # Dashboard de Gastos desde Postgres
+    print("Processing Gasto Data from PostgreSQL...")
+    
+    try:
+        conn = get_pg_connection()
+        query = """
+            SELECT 
+                periodo, 
+                jurisdiccion, 
+                tipo_financ, 
+                partida, 
+                estado, 
+                monto 
+            FROM copa_gastos 
+            WHERE estado != 'Saldo' 
+              AND partida != 'Total de la Fuente' 
+              AND tipo_financ IN ('10','11','12','13','14')
+        """
+        df_gasto = pd.read_sql(query, conn)
+        
+        # Ensure periodo is YYYY-MM
+        if pd.api.types.is_datetime64_any_dtype(df_gasto['periodo']):
+            df_gasto['periodo'] = df_gasto['periodo'].dt.strftime('%Y-%m')
+        else:
+            df_gasto['periodo'] = pd.to_datetime(df_gasto['periodo'], errors='coerce').dt.strftime('%Y-%m')
             
-            name_map = {
-                "GASTO EN PERSONAL": "GASTOS EN PERSONAL",
-                "SERVICIOS DE LA DEUDA Y DISMINUCION DE OTROS PASIVOS": "SERVICIO DE LA DEUDA"
-            }
-            df_gasto["partida"] = df_gasto["partida"].apply(lambda x: name_map.get(x, x))
+        name_map = {
+            "GASTO EN PERSONAL": "GASTOS EN PERSONAL",
+            "SERVICIO DE LA DEUDA Y DISMINUCION DE OTROS": "SERVICIO DE LA DEUDA"
+        }
+        df_gasto["partida"] = df_gasto["partida"].apply(lambda x: name_map.get(x, x))
+        
+        # Mapeo de jurisdicciones debido a diferencias y truncados en la Base
+        juris_map = {
+            "MINISTERIO DE EDUCACION": "MINISTERIO DE EDUCACIÓN",
+            "MINISTERIO DE SALUD PUBLICA": "MINISTERIO DE SALUD PÚBLICA",
+            "MINISTERIO DE PRODUCCION": "MINISTERIO DE PRODUCCIÓN",
+            "MINISTERIO DE OBRAS Y SERVICIOS PUBLICOS": "MINISTERIO DE OBRAS Y SERVICIOS PÚBLICOS",
+            "MINISTERIO DE COORDINACION Y": "MINISTERIO DE COORDINACIÓN Y PLANIFICACIÓN",
+            "MINISTERIO DE JUSTICIA Y DERECHOS": "MINISTERIO DE JUSTICIA Y DERECHOS HUMANOS",
+            "MINISTERIO DE INDUSTRIA TRABAJO Y": "MINISTERIO DE INDUSTRIA TRABAJO Y COMERCIO",
+            "INSTITUTO CORRENTINO DEL AGUA Y DEL": "INSTITUTO CORRENTINO DEL AGUA Y DEL AMBIENTE",
+            "DIRECCION PROVINCIAL DE VIALIDAD": "DIRECCIÓN PROVINCIAL DEL VIALIDAD",
+            "ADMINIST. DE OBRAS SANITARIAS DE": "ADMINISTRACIÓN DE OBRAS SANITARIAS DE CORRIENTES",
+            "INSTITUTO DE DESARROLLO RURAL DE": "INSTITUTO DE DESARROLLO RURAL DE CORRIENTES",
+            "CENTRO DE ONCOLOGIA \"ANNA ROCCA DE": "CENTRO DE ONCOLOGIA 'ANNA ROCCA DE BONATTI'",
+            "AGENCIA CORRENTINA DE BIENES DEL": "AGENCIA CORRENTINA DE BIENES DEL ESTADO"
+        }
+        df_gasto["jurisdiccion"] = df_gasto["jurisdiccion"].str.strip().apply(lambda x: juris_map.get(x, x))
+        
+        gasto_data = df_gasto.to_dict(orient="records")
+        gasto_json_path = os.path.join(os.path.dirname(__file__), '..', 'gasto', 'gasto_data.json')
+        
+        with open(gasto_json_path, 'w', encoding='utf-8') as f:
+            json.dump(gasto_data, f, ensure_ascii=False, indent=2)
             
-            gasto_data = df_gasto.to_dict(orient="records")
-            gasto_json_path = os.path.join(os.path.dirname(__file__), '..', 'gasto', 'gasto_data.json')
-            
-            with open(gasto_json_path, 'w', encoding='utf-8') as f:
-                json.dump(gasto_data, f, ensure_ascii=False, indent=2)
-            print(f"Gasto data saved to {gasto_json_path}")
-        except Exception as e:
-            print(f"Error processing Gasto data: {e}")
+        print(f"Gasto data saved to {gasto_json_path}")
+    except Exception as e:
+        print(f"Error processing Gasto data: {e}")
+    finally:
+        if 'conn' in locals() and conn:
+            conn.close()
 
 if __name__ == "__main__":
     main()

@@ -71,21 +71,87 @@ def fetch_data():
             cursor.close()
         conn.close()
 
-def fetch_ipc_region5():
-    # Fetch IPC data for Region 5 (NEA), Category 1 (General), Division 1
+def fetch_rem_projections():
+    """
+    Fetch REM monthly CPI projections from PostgreSQL (latest survey).
+    Returns dict: {(year, month): decimal_variation}
+    """
+    query = """
+    SELECT fecha, mediana
+    FROM rem_precios_minoristas
+    WHERE fecha_consulta = (SELECT MAX(fecha_consulta) FROM rem_precios_minoristas)
+    ORDER BY fecha ASC
+    """
+    conn = get_pg_ipc_connection()
+    try:
+        df = pd.read_sql(query, conn)
+        projections = {}
+        for _, row in df.iterrows():
+            fecha = pd.to_datetime(row['fecha'])
+            projections[(fecha.year, fecha.month)] = float(row['mediana']) / 100
+        print(f"  REM: Loaded {len(projections)} monthly projections")
+        return projections
+    except Exception as e:
+        print(f"  WARNING: Could not fetch REM projections: {e}")
+        return {}
+    finally:
+        conn.close()
+
+def fetch_ipc_nacion():
+    # Fetch IPC data for Region 1 (Nación), Category 1 (General), Division 1
+    # Fills missing months with REM projections
     query = """
     SELECT 
         EXTRACT(YEAR FROM fecha)::int as anio, 
         EXTRACT(MONTH FROM fecha)::int as mes, 
-        valor as ipc_valor_nea,
-        var_mensual as ipc_var_mensual_nea
+        valor as ipc_valor,
+        var_mensual as ipc_var_mensual
     FROM ipc
-    WHERE id_region = 5 AND id_categoria = 1 AND id_division = 1
+    WHERE id_region = 1 AND id_categoria = 1 AND id_division = 1
     ORDER BY fecha
     """
     conn = get_pg_ipc_connection()
     try:
         df = pd.read_sql(query, conn)
+        
+        # Fill missing months with REM projections
+        rem_projections = fetch_rem_projections()
+        
+        if df.empty:
+            return df
+            
+        last_row = df.iloc[-1]
+        last_year = int(last_row['anio'])
+        last_month = int(last_row['mes'])
+        current_val = float(last_row['ipc_valor'])
+        
+        print(f"  IPC: Last official data: {last_year}-{last_month:02d}")
+        
+        new_rows = []
+        curr_y, curr_m = last_year, last_month
+        
+        while True:
+            curr_m += 1
+            if curr_m > 12:
+                curr_m = 1
+                curr_y += 1
+            
+            if (curr_y, curr_m) in rem_projections:
+                monthly_var = rem_projections[(curr_y, curr_m)]
+                current_val = current_val * (1 + monthly_var)
+                new_rows.append({
+                    'anio': curr_y,
+                    'mes': curr_m,
+                    'ipc_valor': current_val,
+                    'ipc_var_mensual': monthly_var
+                })
+                print(f"  IPC: Projected {curr_y}-{curr_m:02d} with REM {monthly_var*100:.1f}%")
+            else:
+                break
+        
+        if new_rows:
+            df = pd.concat([df, pd.DataFrame(new_rows)], ignore_index=True)
+        
         return df
     finally:
         conn.close()
@@ -107,19 +173,16 @@ def fetch_ripte():
             cursor.close()
         conn.close()
 
-def process_data(df_personnel, df_ipc_nea, df_ripte):
+def process_data(df_personnel, df_ipc, df_ripte):
     # --- Personnel Data Processing ---
     df_personnel['total_gral'] = pd.to_numeric(df_personnel['total_gral'], errors='coerce').fillna(0)
     df_personnel['importe_gral'] = pd.to_numeric(df_personnel['importe_gral'], errors='coerce').fillna(0)
     
     # 1. Total Wage Bill: Sum EVERYTHING (including SAC) as requested by user
-    # "When we talk about wage mass, we must include everything that is paid"
     masa_salarial_total = df_personnel.groupby(['anio', 'mes'])['importe_gral'].sum().reset_index()
     masa_salarial_total.rename(columns={'importe_gral': 'masa_salarial'}, inplace=True)
 
     # 2. Filter out SAC for Average Salary calculation
-    # "For average salary analysis, we should NOT include SAC, sac, S.A.C or s.a.c."
-    # IMPROVED REGEX as per plan
     sac_terms = r'SAC|S\.A\.C|sac|s\.a\.c|Cuota\s*SAC|Aguinaldo'
     df_no_sac = df_personnel[~df_personnel['liquidacion'].str.contains(sac_terms, case=False, na=False)].copy()
     
@@ -140,7 +203,7 @@ def process_data(df_personnel, df_ipc_nea, df_ripte):
     df_dashboard['salario_promedio'] = df_dashboard['masa_sin_sac'] / df_dashboard['cantidad_empleados']
     
     # Merge External Data
-    df_dashboard = pd.merge(df_dashboard, df_ipc_nea, on=['anio', 'mes'], how='left')
+    df_dashboard = pd.merge(df_dashboard, df_ipc, on=['anio', 'mes'], how='left')
     df_dashboard = pd.merge(df_dashboard, df_ripte, on=['anio', 'mes'], how='left')
     
     # Calculations
@@ -149,11 +212,11 @@ def process_data(df_personnel, df_ipc_nea, df_ripte):
     # 1. Monthly Variations
     df_dashboard['salario_var_mensual'] = df_dashboard['salario_promedio'].pct_change()
     
-    # 2. Interannual Variations (FIXED LOGIC: Self-Join instead of shift)
+    # 2. Interannual Variations (Self-Join)
     df_dashboard['anio_prev'] = df_dashboard['anio'] - 1
     
-    df_prev = df_dashboard[['anio', 'mes', 'salario_promedio', 'ipc_valor_nea']].copy()
-    df_prev.columns = ['anio_prev', 'mes', 'salario_promedio_prev', 'ipc_valor_nea_prev']
+    df_prev = df_dashboard[['anio', 'mes', 'salario_promedio', 'ipc_valor']].copy()
+    df_prev.columns = ['anio_prev', 'mes', 'salario_promedio_prev', 'ipc_valor_prev']
     
     df_dashboard = pd.merge(df_dashboard, df_prev, on=['anio_prev', 'mes'], how='left')
     
@@ -161,12 +224,12 @@ def process_data(df_personnel, df_ipc_nea, df_ripte):
     df_dashboard['var_nominal_ia'] = (df_dashboard['salario_promedio'] / df_dashboard['salario_promedio_prev']) - 1
     
     # Calculate IPC interannual variation
-    df_dashboard['var_ipc_ia'] = (df_dashboard['ipc_valor_nea'] / df_dashboard['ipc_valor_nea_prev']) - 1
+    df_dashboard['var_ipc_ia'] = (df_dashboard['ipc_valor'] / df_dashboard['ipc_valor_prev']) - 1
     
     # Real Variation
     df_dashboard['var_real_ia'] = ((1 + df_dashboard['var_nominal_ia']) / (1 + df_dashboard['var_ipc_ia'])) - 1
     
-    # Where IPC is missing, set real variation to None explicitly so frontend doesn't show fake curves
+    # Where IPC is missing, set real variation to None explicitly
     df_dashboard.loc[df_dashboard['var_ipc_ia'].isna(), 'var_real_ia'] = None
 
     return df_dashboard
@@ -295,7 +358,7 @@ def generate_json(df):
             "salario_promedio": df_last12['salario_promedio'].tolist(),
             "ripte_valor": ripte_values,
             "salario_var_mensual": (df_last12['salario_var_mensual'] * 100).fillna(0).tolist(),
-            "ipc_var_mensual": (df_last12['ipc_var_mensual_nea'] * 100).fillna(0).tolist()
+            "ipc_var_mensual": (df_last12['ipc_var_mensual'] * 100).fillna(0).tolist()
         }
 
         data_by_period[period_id] = {
@@ -323,8 +386,8 @@ def main():
     print("Fetching Personnel Data...")
     df_personnel = fetch_data() # Reuse existing function for raw data
     
-    print("Fetching IPC NEA Data...")
-    df_ipc = fetch_ipc_region5()
+    print("Fetching IPC Nación + REM Projections...")
+    df_ipc = fetch_ipc_nacion()
     
     print("Fetching RIPTE Data...")
     df_ripte = fetch_ripte()

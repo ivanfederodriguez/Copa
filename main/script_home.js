@@ -281,7 +281,7 @@ function renderKPIs(mainData, personalData, currentPeriodId) {
     if (copaSubEl) {
         copaSubEl.textContent = `Variación i.a. Deflactada | ${periodLabelFinal}`;
         if (isPeriodIncomplete) copaSubEl.style.color = '#ef4444';
-        else copaSubEl.style.color = '';
+        else copaSubEl.style.color = '#1e293b';
     }
 
     // 2. Cobertura Salarial (Main)
@@ -300,7 +300,7 @@ function renderKPIs(mainData, personalData, currentPeriodId) {
     if (masaSubEl) {
         masaSubEl.textContent = `Variación i.a. Deflactada | ${periodLabelFinal}`;
         if (isPeriodIncomplete) masaSubEl.style.color = '#ef4444';
-        else masaSubEl.style.color = '';
+        else masaSubEl.style.color = '#1e293b';
     }
 
     // 4. Ratio CBT (Personal)
