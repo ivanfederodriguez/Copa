@@ -4,7 +4,10 @@ on:
   schedule:
     # 18:30 Argentina (UTC-3) es 21:30 UTC
     - cron: '30 21 * * *'
-  workflow_dispatch: # Permite la ejecución manual para testeo
+  workflow_dispatch: # Permite ejecución manual
+  push:
+    branches:
+      - desarrollo # Se dispara automáticamente al subir cambios a desarrollo
 
 jobs:
   update-data:
@@ -13,13 +16,13 @@ jobs:
       contents: write
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-      # PostgreSQL (Variables que busca el script etl_main.py)
+      # PostgreSQL
       PG_HOST: ${{ secrets.PG_HOST }}
       PG_PORT: ${{ secrets.PG_PORT }}
       PG_USER: ${{ secrets.PG_USER }}
       PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
       PG_DATABASE: ${{ secrets.PG_DATABASE }}
-      # MySQL/MariaDB (Variables que busca el script etl_main.py)
+      # MySQL/MariaDB
       DB_HOST: ${{ secrets.DB_HOST }}
       DB_PORT: ${{ secrets.DB_PORT }}
       DB_USER: ${{ secrets.DB_USER }}
@@ -40,6 +43,7 @@ jobs:
           printf "%s" "${{ secrets.EXCEL_PRESUPUESTO }}" | base64 -d > main/presupuesto.xlsx
           printf "%s" "${{ secrets.EXCEL_MASA_SALARIAL }}" | base64 -d > main/masa_salarial.xlsx
           printf "%s" "${{ secrets.EXCEL_RECA }}" | base64 -d > main/reca.xlsx
+          printf "%s" "${{ secrets.EXCEL_GASTOS }}" | base64 -d > main/Gastos.xlsx
 
       - name: Install dependencies
         run: |
@@ -53,5 +57,11 @@ jobs:
         run: |
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
-          git add main/_data_ipce_v1.json
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update dashboard data [skip ci]" && git push origin main)
+          
+          # Agregamos tanto el archivo de IPC como el de Gastos
+          git add main/_data_ipce_v1.json gasto/gasto_data.json
+          
+          # Si prefieres que guarde CUALQUIER json que cambie, podrías usar:
+          # git add *.json
+          
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update dashboard data [skip ci]" && git push origin ${GITHUB_REF_NAME})
