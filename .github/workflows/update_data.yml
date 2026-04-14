@@ -7,7 +7,7 @@ on:
   workflow_dispatch: # Permite ejecución manual
   push:
     branches:
-      - desarrollo # Se dispara automáticamente al subir cambios a desarrollo
+      - main # Se dispara automáticamente al subir cambios a main
 
 jobs:
   update-data:
@@ -28,6 +28,7 @@ jobs:
       DB_USER: ${{ secrets.DB_USER }}
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
       DB_DATABASE: ${{ secrets.DB_DATABASE }}
+      API_URL_POST: ${{ secrets.API_URL_POST }}
       
     steps:
       - name: Checkout repository
@@ -40,10 +41,10 @@ jobs:
 
       - name: Reconstruir archivos Excel desde Secrets
         run: |
-          printf "%s" "${{ secrets.EXCEL_PRESUPUESTO }}" | base64 -d > main/presupuesto.xlsx
-          printf "%s" "${{ secrets.EXCEL_MASA_SALARIAL }}" | base64 -d > main/masa_salarial.xlsx
-          printf "%s" "${{ secrets.EXCEL_RECA }}" | base64 -d > main/reca.xlsx
-          printf "%s" "${{ secrets.EXCEL_GASTOS }}" | base64 -d > main/Gastos.xlsx
+          printf "%s" "${{ secrets.EXCEL_PRESUPUESTO }}" | base64 -d > backend/inputs/presupuesto.xlsx
+          printf "%s" "${{ secrets.EXCEL_MASA_SALARIAL }}" | base64 -d > backend/inputs/masa_salarial.xlsx
+          printf "%s" "${{ secrets.EXCEL_RECA }}" | base64 -d > backend/inputs/reca.xlsx
+          printf "%s" "${{ secrets.EXCEL_GASTOS }}" | base64 -d > backend/inputs/Gastos.xlsx
 
       - name: Install dependencies
         run: |
@@ -51,15 +52,15 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
       - name: Run ETL Script
-        run: python main/etl_main.py
+        run: python backend/etl_main.py && python backend/etl_personal.py && python backend/update_users.py
 
       - name: Commit and push changes
         run: |
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
           
-          # Agregamos tanto el archivo de IPC como el de Gastos
-          git add main/_data_ipce_v1.json gasto/gasto_data.json
+          # Agregamos los archivos JSON de datos actualizados
+          git add data/*.json
           
           # Si prefieres que guarde CUALQUIER json que cambie, podrías usar:
           # git add *.json

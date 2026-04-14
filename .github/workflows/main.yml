@@ -39,11 +39,11 @@ env:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
       - name: Run ETL Script
-        run: python main/etl_main.py
+        run: python backend/etl_main.py && python backend/etl_personal.py
 
       - name: Commit and push changes
         run: |
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
-          git add main/_data_ipce_v1.json
+          git add data/*.json
           git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update dashboard data [skip ci]" && git push)

@@ -89,6 +89,11 @@ const tsInstances = {};
 document.addEventListener('DOMContentLoaded', () => initDashboard());
 
 async function initDashboard() {
+    const currentUser = Auth.getCurrentUser();
+    if (currentUser && currentUser.username === 'gobernador') {
+        window.location.href = '../main/index.html';
+        return;
+    }
     try {
         const response = await fetch('../../data/gasto_data.json');
         if (!response.ok) throw new Error('Error loading gasto data');
@@ -96,6 +101,7 @@ async function initDashboard() {
         populateAllFilters();
         setupEventListeners();
         updateAll();
+        Auth.logActivity('Gasto', 'Carga de Página');
     } catch (error) {
         console.error("Dashboard init error:", error);
         const tb = document.querySelector('#gasto-table tbody');
@@ -344,22 +350,37 @@ function populateAllFilters() {
 function setupEventListeners() {
     // Heatmap estado & juris group
     const hmEstado = document.getElementById('hm-estado');
-    if (hmEstado) hmEstado.addEventListener('change', updateHeatmap);
+    if (hmEstado) hmEstado.addEventListener('change', () => {
+        Auth.logActivity('Gasto', 'Filtro Mapa de Calor', { tipo: 'estado', valor: hmEstado.value });
+        updateHeatmap();
+    });
     const hmJurisGroup = document.getElementById('hm-juris-group');
-    if (hmJurisGroup) hmJurisGroup.addEventListener('change', updateHeatmap);
+    if (hmJurisGroup) hmJurisGroup.addEventListener('change', () => {
+        Auth.logActivity('Gasto', 'Filtro Mapa de Calor', { tipo: 'jurisdiccion_grupo', valor: hmJurisGroup.value });
+        updateHeatmap();
+    });
 
     // Table periodo
     const tblP = document.getElementById('tbl-periodo');
-    if (tblP) tblP.addEventListener('change', updateTable);
+    if (tblP) tblP.addEventListener('change', () => {
+        Auth.logActivity('Gasto', 'Filtro Tabla', { periodo: tblP.value });
+        updateTable();
+    });
 
     // Avance periodo
     const avP = document.getElementById('av-periodo');
-    if (avP) avP.addEventListener('change', updateRatioChart);
+    if (avP) avP.addEventListener('change', () => {
+        Auth.logActivity('Gasto', 'Filtro Gráfico Avance', { periodo: avP.value });
+        updateRatioChart();
+    });
 
     // Waterfall (all simple selects)
     ['wf-estado', 'wf-jurisdiccion', 'wf-partida', 'wf-fuente'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.addEventListener('change', updateWaterfallChart);
+        if (el) el.addEventListener('change', () => {
+            Auth.logActivity('Gasto', 'Filtro Cascada', { filtro: id, valor: el.value });
+            updateWaterfallChart();
+        });
     });
 }
 

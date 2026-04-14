@@ -114,14 +114,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (navMonitor) navMonitor.style.display = 'block';
         if (navAnual) navAnual.style.display = 'block';
         if (navPersonal) navPersonal.style.display = 'none'; // Hidden as per user request
-        if (navGasto) navGasto.style.display = 'block';
+        if (navGasto) {
+            navGasto.style.display = (currentUser.username === 'gobernador') ? 'none' : 'block';
+        }
 
 
         // Show all dashboard links (mobile)
         if (navMonitorMobile) navMonitorMobile.style.display = 'block';
         if (navAnualMobile) navAnualMobile.style.display = 'block';
         if (navPersonalMobile) navPersonalMobile.style.display = 'none'; // Hidden as per user request
-        if (navGastoMobile) navGastoMobile.style.display = 'block';
+        if (navGastoMobile) {
+            navGastoMobile.style.display = (currentUser.username === 'gobernador') ? 'none' : 'block';
+        }
 
 
         // Setup logout handlers
@@ -161,6 +165,9 @@ document.addEventListener('DOMContentLoaded', () => {
         fetch('../../data/data_personal_v1.json').then(res => res.json())
     ])
         .then(([mainData, personalData]) => {
+            // Log access to the main dashboard
+            Auth.logActivity('Inicio', 'Carga de Página');
+
             let currentPeriodId = mainData.meta.default_period_id;
 
             // Setup selector
@@ -189,6 +196,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Add event listener
                 selector.addEventListener('change', (e) => {
+                    const selectedId = e.target.value;
+                    const selectedLabel = e.target.selectedOptions[0]?.textContent;
+                    
+                    // Log filter change
+                    Auth.logActivity('Inicio', 'Cambio de Mes', { 
+                        period_id: selectedId, 
+                        label: selectedLabel 
+                    });
+
                     const selectedOption = e.target.selectedOptions[0];
                     if (selectedOption && selectedOption.dataset.incomplete === 'true') {
                         selector.style.color = '#ef4444'; // Red for incomplete

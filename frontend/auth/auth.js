@@ -12,25 +12,69 @@ const Auth = (function () {
         SESSION_DURATION: 8 * 60 * 60 * 1000, // 8 hours in milliseconds
     };
 
-    // User credentials (in production, this should be handled by a backend)
-    // Fix 1-B Reverted: Restored hardcoded credentials for demo purposes.
-    const USERS = {
-        'admin': {
-            password: 'admin2026',
-            name: 'Administrador Demo',
-            role: 'admin'
-        },
-        'usuario': {
-            password: 'usuario2026',
-            name: 'Usuario Demo',
-            role: 'user'
-        },
-        'gobernador': {
-            password: 'gobernador26',
-            name: 'Gobernador',
-            role: 'user'
+    // User credentials (will be loaded from JSON)
+    let USERS = null;
+    let API_CONFIG = null;
+
+    /**
+     * Helper to get the absolute URL to the /data/ folder.
+     * Works regardless of whether the server is started from the project root or from /frontend/.
+     */
+    function getDataUrl(filename) {
+        const origin = window.location.origin;
+        const path = window.location.pathname;
+
+        // Case 1: server runs from project root → path includes /frontend/
+        if (path.includes('/frontend/')) {
+            // Find everything up to and including the root of the project (before /frontend/)
+            const rootPath = path.substring(0, path.indexOf('/frontend/'));
+            return `${origin}${rootPath}/data/${filename}`;
         }
-    };
+
+        // Case 2: server runs from /frontend/ directory → no /frontend/ in path
+        // The data/ folder is one level up (../data/), but since we're at origin root, try /data/ first
+        // We resolve relative to current page
+        const segments = path.split('/');
+        // Remove everything after the first subfolder (e.g. /main/ → go up to /)
+        const depth = segments.filter(s => s.length > 0).length;
+        const ups = depth > 1 ? '../'.repeat(depth - 1) : '';
+        return `${origin}/${ups}data/${filename}`.replace(/([^:]\/)\/+/g, '$1');
+    }
+
+    /**
+     * Load configuration from the synchronized data file
+     */
+    async function loadConfig() {
+        if (API_CONFIG) return API_CONFIG;
+        try {
+        const response = await fetch(getDataUrl('config.json'));
+            if (response.ok) {
+                API_CONFIG = await response.json();
+            } else {
+                API_CONFIG = { API_URL_POST: '/api/coparticipacion/log' };
+            }
+        } catch (error) {
+            console.warn('Error loading config.json, using fallback.');
+            API_CONFIG = { API_URL_POST: '/api/coparticipacion/log' };
+        }
+        return API_CONFIG;
+    }
+
+    /**
+     * Load users from the synchronized data file
+     */
+    async function loadUsers() {
+        if (USERS) return USERS;
+        try {
+        const response = await fetch(getDataUrl('users.json'));
+            if (!response.ok) throw new Error('Could not load users database');
+            USERS = await response.json();
+        } catch (error) {
+            console.error('Error loading users:', error);
+            USERS = {}; // Ensure it's at least an empty object
+        }
+        return USERS;
+    }
 
     /**
      * Get current session from localStorage
@@ -61,6 +105,7 @@ const Auth = (function () {
     function saveSession(username, userData) {
         const expiresAt = new Date().getTime() + CONFIG.SESSION_DURATION;
         const session = {
+            id: userData.id, // ID from users.json
             username: username,
             name: userData.name,
             role: userData.role,
@@ -98,12 +143,14 @@ const Auth = (function () {
          * @param {string} password - User's password
          * @returns {boolean} - True if login successful, false otherwise
          */
-        login: function (username, password) {
+        login: async function (username, password) {
             if (!username || !password) {
                 return false;
             }
 
-            const user = USERS[username];
+            const users = await loadUsers();
+            
+            const user = users[username];
             if (!user) {
                 return false;
             }
@@ -120,6 +167,7 @@ const Auth = (function () {
          * Log out current user
          */
         logout: function () {
+            this.logActivity('Acceso', 'Logout');
             clearSession();
             // Redirect to main dashboard (public) instead of login
             // Use relative path to work on both localhost and GitHub Pages
@@ -182,6 +230,37 @@ const Auth = (function () {
 
             const remaining = session.expiresAt - new Date().getTime();
             return Math.floor(remaining / 60000); // Convert to minutes
+        },
+
+        /**
+         * Log user activity for analytics
+         * @param {string} seccion - Section of the dashboard (e.g., 'Analisis Anual')
+         * @param {string} accion - Type of action (e.g., 'Filtrar', 'Descargar')
+         * @param {Object} detalle - Additional data as JSON
+         */
+        logActivity: async function (seccion, accion, detalle = {}) {
+            const user = this.getCurrentUser();
+            if (!user || !user.id) return;
+
+            const logData = {
+                id_usuario: user.id,
+                seccion_tablero: seccion,
+                accion: accion,
+                detalle_interaccion: detalle
+            };
+
+            const config = await loadConfig();
+
+            // Point to the centralized API
+            try {
+                return await fetch(config.API_URL_POST, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(logData)
+                });
+            } catch (err) {
+                console.warn("Telemetry not sent:", err.message);
+            }
         }
     };
 })();

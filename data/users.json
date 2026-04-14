@@ -1,0 +1,32 @@
+{
+  "hacienda": {
+    "id": 1,
+    "password": "gcorrales",
+    "name": "Hacienda",
+    "role": "user"
+  },
+  "mineco": {
+    "id": 2,
+    "password": "hgrachot",
+    "name": "Mineco",
+    "role": "user"
+  },
+  "hacienda2": {
+    "id": 4,
+    "password": "dinsaurralde",
+    "name": "Hacienda2",
+    "role": "user"
+  },
+  "hacienda3": {
+    "id": 5,
+    "password": "fgonzalez",
+    "name": "Hacienda3",
+    "role": "user"
+  },
+  "gobernador": {
+    "id": 3,
+    "password": "jpvaldes",
+    "name": "Gobernador",
+    "role": "user"
+  }
+}

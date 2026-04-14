@@ -78,6 +78,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (userNameEl) {
             userNameEl.textContent = currentUser.name;
         }
+        
+        // Hide Gasto for gobernador
+        if (currentUser.username === 'gobernador') {
+            const navGasto = document.getElementById('navGasto');
+            if (navGasto) navGasto.style.display = 'none';
+        }
+
+        // Track page load
+        Auth.logActivity('Analisis Anual', 'Carga de Página');
     }
 
     // Logout handler
@@ -175,6 +184,7 @@ function initYearSelector(periods) {
         if (selectedOption && selectedOption.dataset.incomplete === 'true') {
             alert("Atención: El año seleccionado aún cuenta con datos incompletos. Las comparativas se realizan contra los mismos meses del año anterior.");
         }
+        Auth.logActivity('Analisis Anual', 'Cambio de Año', { year: e.target.value });
         renderDashboard(e.target.value);
     });
 

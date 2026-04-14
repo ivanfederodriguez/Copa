@@ -391,9 +391,12 @@
 
 
             // Attempt login
-            const success = Auth.login(username, password);
+            const success = await Auth.login(username, password);
 
             if (success) {
+                // Log login
+                await Auth.logActivity('Acceso', 'Login Exitoso', { username: username });
+                
                 // Redirect to main dashboard
                 window.location.href = './main/index.html';
             } else {
