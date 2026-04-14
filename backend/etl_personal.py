@@ -236,53 +236,6 @@ def process_data(df_personnel, df_ipc, df_ripte):
 
 import json
 
-def fetch_cbt():
-    """
-    Fetch CBT NEA from Google Sheets CSV export.
-    """
-    import io
-    import requests
-    from datetime import datetime
-    from dateutil.relativedelta import relativedelta
-    
-    url = "https://docs.google.com/spreadsheets/d/17K0k_OvXFa-9jjIaX7Q5Nwz5TkxHMqXIxm-qYhDWYyA/export?format=csv&gid=1100278723"
-    
-    try:
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
-    except Exception as e:
-        print(f"CRITICAL ERROR: Failed to fetch CBT data from Google Sheets: {e}")
-        raise e
-    
-    csv_data = io.StringIO(response.text)
-    df = pd.read_csv(csv_data)
-    
-    cbt_column = df['CBT NEA']
-    start_date = datetime(2016, 4, 1)
-    
-    data = []
-    for idx, value in enumerate(cbt_column):
-        if pd.isna(value) or value == '':
-            continue
-            
-        if isinstance(value, str):
-            cleaned = value.replace('$', '').replace(' ', '').replace('.', '').replace(',', '.').strip()
-            try:
-                cbt_value = float(cleaned)
-            except ValueError:
-                continue
-        else:
-            cbt_value = float(value)
-        
-        if cbt_value > 0:
-            fecha = start_date + relativedelta(months=idx)
-            data.append({
-                'anio': fecha.year,
-                'mes': fecha.month,
-                'cbt_nea': cbt_value
-            })
-    
-    return pd.DataFrame(data)
 
 def generate_json(df):
     MONTH_NAMES = {
@@ -384,7 +337,7 @@ def generate_json(df):
 
 def main():
     print("Fetching Personnel Data...")
-    df_personnel = fetch_data() # Reuse existing function for raw data
+    df_personnel = fetch_data()
     
     print("Fetching IPC Nación + REM Projections...")
     df_ipc = fetch_ipc_nacion()
@@ -392,13 +345,8 @@ def main():
     print("Fetching RIPTE Data...")
     df_ripte = fetch_ripte()
     
-    print("Fetching CBT Data...")
-    df_cbt = fetch_cbt()
-    
     print("Processing Dashboard Data...")
     df_dashboard = process_data(df_personnel, df_ipc, df_ripte)
-    
-    df_dashboard = pd.merge(df_dashboard, df_cbt, on=['anio', 'mes'], how='left')
     
     generate_json(df_dashboard)
 
