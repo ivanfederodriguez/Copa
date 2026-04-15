@@ -10,6 +10,26 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
+def find_column(df, patterns):
+    """
+    Finds a column in a DataFrame that matches any of the given patterns (lowercase).
+    """
+    for col in df.columns:
+        c_low = str(col).lower()
+        
+        # Test against patterns directly
+        for pattern in patterns:
+            # Special case for "año" variations
+            if pattern == 'año' or pattern == 'anio':
+                if c_low == 'año' or c_low == 'anio' or c_low == 'year' or (len(c_low) >= 2 and c_low.startswith('a') and c_low.endswith('o')):
+                    return col
+                continue
+                
+            if pattern in c_low:
+                return col
+    return None
+
+
 # DB Configuration from Environment Variables (Fix 1-C: Remove hardcoded defaults)
 DB_CONFIG = {
     'user': os.getenv('DB_USER'),
@@ -163,20 +183,25 @@ def fetch_copa_esperada():
     # Read Excel
     df_budget = pd.read_excel(excel_path, engine='openpyxl')
     
-    # Ensure columns exist, lowercase for safety if needed or map directly. 
-    # Let's assume the user specified: mes, año, ron, rop
-    # Rename 'año' to 'year' internally for consistency
-    df_budget = df_budget.rename(columns={'año': 'year', 'mes': 'month'})
+    # Robust column detection
+    col_month = find_column(df_budget, ['mes', 'month'])
+    col_year = find_column(df_budget, ['año', 'anio', 'ao', 'year'])
+    col_ron = find_column(df_budget, ['ron'])
+    col_rop = find_column(df_budget, ['rop'])
+
+    if not col_month or not col_year:
+        print(f"  [copa_esperada] ERROR: No se encontró columna de mes/año en {excel_path}")
+        return pd.DataFrame(columns=['fecha', 'esperada', 'esperada_prov', 'day', 'month', 'year'])
 
     import calendar
     new_rows = []
     
     for _, row in df_budget.iterrows():
-        y = int(row['year'])
-        m = int(row['month'])
+        y = int(row[col_year])
+        m = int(row[col_month])
         
-        val_ron_millions = float(row.get('ron', 0))
-        val_rop_millions = float(row.get('rop', 0))
+        val_ron_millions = float(row.get(col_ron, 0)) if col_ron else 0
+        val_rop_millions = float(row.get(col_rop, 0)) if col_rop else 0
         
         # Convert to pesos
         val_ron_pesos = val_ron_millions * 1_000_000
@@ -202,38 +227,77 @@ def fetch_copa_esperada():
     
     return df[['fecha', 'esperada', 'esperada_prov', 'day', 'month', 'year']]
 
-
 def fetch_masa_salarial(target_years):
     """
-    Fetches monthly salary bill (Masa Salarial) for specified years from the Excel file (masa_salarial.xlsx).
-    Includes SAC as explicitly requested. Data is available from Jan 2025 onwards.
+    Fetches monthly salary bill (Masa Salarial) for specified years.
+    
+    Primary source: MySQL table 'plantilla_personal_provincia' (same DB used by fetch_salary_details).
+    Includes ALL items (SAC included) as requested.
+    Fallback: Excel file 'masa_salarial.xlsx' in inputs/ (legacy support).
     
     Args:
         target_years (list): List of integers representing the years to query.
         
     Returns:
-        pd.DataFrame: Aggregated monetary mass by year and month.
+        pd.DataFrame: Aggregated monetary mass by year and month, columns: ['anio', 'mes', 'masa_salarial'].
     """
+    df_mysql = pd.DataFrame(columns=['anio', 'mes', 'masa_salarial'])
+    # --- Primary: MySQL ---
+    print("  [masa_salarial] Leyendo tabla histórica desde MySQL (plantilla_personal_provincia)...")
+    years_str = ",".join(map(str, target_years))
+    query = f"""
+    SELECT anio, mes, SUM(importe_gral) AS masa_salarial
+    FROM plantilla_personal_provincia
+    WHERE anio IN ({years_str})
+    GROUP BY anio, mes
+    ORDER BY anio, mes
+    """
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(query)
+        columns = [col[0] for col in cursor.description]
+        data = cursor.fetchall()
+        df_mysql = pd.DataFrame(data, columns=columns)
+        df_mysql['masa_salarial'] = pd.to_numeric(df_mysql['masa_salarial'], errors='coerce').fillna(0)
+        df_mysql['anio'] = df_mysql['anio'].astype(int)
+        df_mysql['mes'] = df_mysql['mes'].astype(int)
+        print(f"  [masa_salarial] {len(df_mysql)} registros cargados desde MySQL.")
+    except Exception as e:
+        print(f"  [masa_salarial] ERROR al leer MySQL: {e}.")
+    finally:
+        conn.close()
+
+    # --- Excel Overrides/Data ---
+    df_excel = pd.DataFrame(columns=['anio', 'mes', 'masa_salarial'])
     excel_path = os.path.join(os.path.dirname(__file__), 'inputs', 'masa_salarial.xlsx')
-    
-    if not os.path.exists(excel_path):
-        return pd.DataFrame(columns=['anio', 'mes', 'masa_salarial'])
+    if os.path.exists(excel_path):
+        print("  [masa_salarial] Leyendo extensiones/ajustes desde Excel...")
+        df_e = pd.read_excel(excel_path, engine='openpyxl')
         
-    df = pd.read_excel(excel_path, engine='openpyxl')
-    
-    # Rename columns to match expected downstream format
-    df = df.rename(columns={'año': 'anio', 'masa salarial': 'masa_salarial'})
-    
-    # Keep only target years
-    df = df[df['anio'].isin(target_years)].copy()
-    
-    # Ensure numeric
-    df['masa_salarial'] = pd.to_numeric(df['masa_salarial'], errors='coerce').fillna(0)
-    
-    # Group sum (in case of multiple rows per month)
-    grouped = df.groupby(['anio', 'mes'])['masa_salarial'].sum().reset_index()
-    
-    return grouped
+        # Robust detection
+        col_month = find_column(df_e, ['mes', 'month'])
+        col_year = find_column(df_e, ['año', 'anio', 'ao', 'year'])
+        col_masa = find_column(df_e, ['masa salarial', 'masa'])
+        
+        if col_year and col_month:
+            df_e = df_e.rename(columns={col_year: 'anio', col_month: 'mes', col_masa: 'masa_salarial'})
+            df_e = df_e[df_e['anio'].isin(target_years)].copy()
+            df_e['masa_salarial'] = pd.to_numeric(df_e.get('masa_salarial', 0), errors='coerce').fillna(0)
+            df_excel = df_e.groupby(['anio', 'mes'])['masa_salarial'].sum().reset_index()
+            print(f"  [masa_salarial] {len(df_excel)} registros cargados desde Excel.")
+        else:
+            print("  [masa_salarial] WARNING: No se encontró columna de año/mes en Excel.")
+
+    # Combine both, giving priority to Excel
+    if not df_excel.empty and not df_mysql.empty:
+        # Merge allowing Excel to override MySQL for same year/month
+        df_combined = pd.concat([df_excel, df_mysql]).drop_duplicates(subset=['anio', 'mes'], keep='first')
+        return df_combined.sort_values(['anio', 'mes']).reset_index(drop=True)
+    elif not df_excel.empty:
+        return df_excel
+    else:
+        return df_mysql
 
 def fetch_recaudacion_provincial():
     """
@@ -246,12 +310,22 @@ def fetch_recaudacion_provincial():
     excel_path = os.path.join(os.path.dirname(__file__), 'inputs', 'reca.xlsx')
     
     if not os.path.exists(excel_path):
-        return pd.DataFrame(columns=['año', 'mes', 'recaudacion_provincial', 'distribucion_municipal_prov'])
+        return pd.DataFrame(columns=['year', 'month', 'recaudacion_provincial', 'distribucion_municipal_prov'])
         
     df = pd.read_excel(excel_path, engine='openpyxl')
     
+    # Robust detection
+    col_month = find_column(df, ['mes', 'month'])
+    col_year = find_column(df, ['año', 'anio', 'ao', 'year'])
+    
+    if not col_month or not col_year:
+        print(f"  [reca] ERROR: No se encontró columna de mes/año en {excel_path}")
+        return pd.DataFrame(columns=['year', 'month', 'recaudacion_provincial', 'distribucion_municipal_prov'])
+
+    df = df.rename(columns={col_year: 'year', col_month: 'month'})
+
     # Ensure numeric for all tax columns
-    tax_cols = [col for col in df.columns if col not in ['año', 'mes']]
+    tax_cols = [col for col in df.columns if col not in ['year', 'month']]
     for col in tax_cols:
         df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
         
@@ -265,8 +339,7 @@ def fetch_recaudacion_provincial():
     
     df['distribucion_municipal_prov'] = df[available_target_taxes].sum(axis=1) * 0.19
     
-    # Rename for consistency
-    df = df.rename(columns={'año': 'year', 'mes': 'month'})
+    # Rename mapping already applied above for year/month
     
     grouped = df.groupby(['year', 'month'])[['recaudacion_provincial', 'distribucion_municipal_prov']].sum().reset_index()
     
@@ -362,7 +435,7 @@ def fetch_ipc():
                     'month': curr_m,
                     'ipc_valor': current_val
                 })
-                print(f"  IPC: Projected {curr_y}-{curr_m:02d} with REM {monthly_var*100:.1f}% → {current_val:.2f}")
+                print(f"  IPC: Projected {curr_y}-{curr_m:02d} with REM {monthly_var*100:.1f}% -> {current_val:.2f}")
             else:
                 break
                     
