@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Hide Gasto for gobernador
-        if (currentUser.username === 'jpvaldes') {
+        if (currentUser.username === 'jpvaldes' || currentUser.username === 'gobernador' || currentUser.name === 'Gob. JP. Valdes') {
             const navGasto = document.getElementById('navGasto');
             if (navGasto) navGasto.style.display = 'none';
         }
