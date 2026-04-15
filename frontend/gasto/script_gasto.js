@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => initDashboard());
 
 async function initDashboard() {
     const currentUser = Auth.getCurrentUser();
-    if (currentUser && currentUser.username === 'gobernador') {
+    if (currentUser && currentUser.username === 'jpvaldes') {
         window.location.href = '../main/index.html';
         return;
     }

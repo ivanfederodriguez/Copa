@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (navAnual) navAnual.style.display = 'block';
         if (navPersonal) navPersonal.style.display = 'none'; // Hidden as per user request
         if (navGasto) {
-            navGasto.style.display = (currentUser.username === 'gobernador') ? 'none' : 'block';
+            navGasto.style.display = (currentUser.username === 'jpvaldes') ? 'none' : 'block';
         }
 
 
@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (navAnualMobile) navAnualMobile.style.display = 'block';
         if (navPersonalMobile) navPersonalMobile.style.display = 'none'; // Hidden as per user request
         if (navGastoMobile) {
-            navGastoMobile.style.display = (currentUser.username === 'gobernador') ? 'none' : 'block';
+            navGastoMobile.style.display = (currentUser.username === 'jpvaldes') ? 'none' : 'block';
         }
 
 
