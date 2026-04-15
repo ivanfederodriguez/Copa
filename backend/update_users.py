@@ -55,6 +55,14 @@ def update_users():
                 'role': 'user'
             }
             
+        # Manually add the IPECD2026 generic user
+        users_dict['IPECD2026'] = {
+            'id': 6,
+            'password': 'admin',
+            'name': 'Ipecd2026',
+            'role': 'user'
+        }
+            
         # Target path for the users JSON
         output_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'users.json')
         
