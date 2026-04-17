@@ -788,6 +788,9 @@ def process_data(df_daily, df_salary, df_ipc, df_esperada, df_reca_prov):
             salary_imm_prev_row = df_salary[(df_salary['anio'] == prev_y_target) & (df_salary['mes'] == prev_m_target)]
             if not salary_imm_prev_row.empty:
                 masa_salarial_target = salary_imm_prev_row['masa_salarial'].values[0]
+                # FIX: actualizar el label al mes de donde se toma la masa salarial
+                prev_date = datetime(prev_y_target, prev_m_target, 1)
+                salary_target_month = prev_date.strftime('%B').capitalize()
             else:
                 masa_salarial_target = total_salary_prev # Fallback to same month previous year if immediately previous is also missing
                 salary_target_month = month_label
@@ -807,11 +810,18 @@ def process_data(df_daily, df_salary, df_ipc, df_esperada, df_reca_prov):
              daily_curr['neta_acumulada'] = None
              daily_curr['esperada_acumulada'] = None
 
+        # ROP: serie mensual concentrada en el último día con datos
+        cumulative_rop = [None] * len(daily_curr)
+        if max_day_curr > 0:
+            cumulative_rop[max_day_curr - 1] = rop_disponible_curr / 1_000_000
+
         data_by_period[period_id]["charts"]["copa_vs_salario"] = {
             "labels": daily_curr['day'].astype(str).tolist(),
             "cumulative_copa": [x / 1_000_000 if pd.notna(x) else None for x in daily_curr['recaudacion_acumulada'].tolist()],
             "cumulative_neta": [x / 1_000_000 if pd.notna(x) else None for x in daily_curr['neta_acumulada'].tolist()],
             "cumulative_esperada": [x / 1_000_000 if pd.notna(x) else None for x in daily_curr['esperada_acumulada'].tolist()],
+            "cumulative_rop": cumulative_rop,
+            "rop_disponible": rop_disponible_curr / 1_000_000,
             "salario_target": [(masa_salarial_target / 1_000_000)] * len(daily_curr),
             "copa_label": month_label,
             "salario_label": salary_target_month
