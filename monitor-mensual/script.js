@@ -778,10 +778,10 @@ function renderCopaVsSalarioChart(dataCopa) {
     const ctx = document.getElementById('chartCopaVsSalario');
     if (!ctx) return;
 
-    // Update Title dynamically
+    // Update Title dynamically — usa salario_label que ahora refleja el mes correcto
     const titleEl = document.getElementById('copaVsSalarioTitle');
     if (titleEl && dataCopa && dataCopa.copa_label && dataCopa.salario_label) {
-        titleEl.textContent = `RON Disponible ${dataCopa.copa_label} vs Sueldos ${dataCopa.salario_label}`;
+        titleEl.textContent = `Recursos Disponibles ${dataCopa.copa_label} vs Sueldos ${dataCopa.salario_label}`;
     }
 
     if (chartCopaInstance) {
@@ -791,10 +791,12 @@ function renderCopaVsSalarioChart(dataCopa) {
     if (!dataCopa) return;
 
     const colorPrimary = '#10b981';
+    const colorROP = '#3b82f6'; // Azul para ROP
     const colorAccent = '#af2f2f';
 
     let chartLabels = dataCopa.labels;
     let cumulativeCopaNet = dataCopa.cumulative_copa;
+    let cumulativeRop = dataCopa.cumulative_rop || [];
     let salarioTarget = dataCopa.salario_target;
 
     // Mobile: sample every 3rd data point (data is cumulative, so we take snapshots)
@@ -803,15 +805,18 @@ function renderCopaVsSalarioChart(dataCopa) {
         const step = 3;
         const sampledLabels = [];
         const sampledCopa = [];
+        const sampledRop = [];
         const sampledSalario = [];
         for (let i = 0; i < chartLabels.length; i += step) {
             const idx = Math.min(i + step - 1, chartLabels.length - 1);
             sampledLabels.push(chartLabels[idx]);
             sampledCopa.push(cumulativeCopaNet[idx]);
+            sampledRop.push(cumulativeRop[idx]);
             sampledSalario.push(salarioTarget[idx]);
         }
         chartLabels = sampledLabels;
         cumulativeCopaNet = sampledCopa;
+        cumulativeRop = sampledRop;
         salarioTarget = sampledSalario;
     }
 
@@ -833,13 +838,25 @@ function renderCopaVsSalarioChart(dataCopa) {
                 },
                 {
                     type: 'bar',
-                    label: 'Coparticipación Disponible Acumulada',
+                    label: 'RON Disponible Acumulada',
                     data: cumulativeCopaNet,
                     backgroundColor: 'rgba(16, 185, 129, 0.8)',
                     borderColor: colorPrimary,
                     borderWidth: 1,
                     borderRadius: 4,
-                    yAxisID: 'y'
+                    yAxisID: 'y',
+                    stack: 'recursos'
+                },
+                {
+                    type: 'bar',
+                    label: 'ROP Disponible',
+                    data: cumulativeRop,
+                    backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                    borderColor: colorROP,
+                    borderWidth: 1,
+                    borderRadius: 4,
+                    yAxisID: 'y',
+                    stack: 'recursos'
                 }
             ]
         },
@@ -882,6 +899,7 @@ function renderCopaVsSalarioChart(dataCopa) {
             },
             scales: {
                 y: {
+                    stacked: true,
                     grid: { color: 'rgba(0,0,0,0.05)', drawBorder: false },
                     ticks: {
                         font: { size: 11 },
@@ -890,6 +908,7 @@ function renderCopaVsSalarioChart(dataCopa) {
                     }
                 },
                 x: {
+                    stacked: true,
                     grid: { display: false },
                     ticks: { font: { size: 11 } }
                 }

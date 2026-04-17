@@ -277,11 +277,11 @@
                         <label>Fuente</label>
                         <select id="hm-fuente" multiple>
                             <option value="TODAS">Todas las Fuentes</option>
-                            <option value="10" selected>10 - TESORO DE LA PROVINCIA</option>
-                            <option value="11" selected>11 - RECURSOS PROPIOS</option>
-                            <option value="12" selected>12 - FINANCIAMIENTO INTERNO</option>
-                            <option value="13" selected>13 - NACIONAL CON AFECTACIÓN ESPECÍFICA</option>
-                            <option value="14" selected>14 - PROVINCIAL CON AFECTACIÓN ESPECÍFICA</option>
+                            <option value="10">10 - TESORO DE LA PROVINCIA</option>
+                            <option value="11">11 - RECURSOS PROPIOS</option>
+                            <option value="12">12 - FINANCIAMIENTO INTERNO</option>
+                            <option value="13">13 - NACIONAL CON AFECTACIÓN ESPECÍFICA</option>
+                            <option value="14">14 - PROVINCIAL CON AFECTACIÓN ESPECÍFICA</option>
                         </select>
                     </div>
                 </div>
@@ -301,17 +301,17 @@
                 <div class="section-filters">
                     <div class="sf-group">
                         <label>Período</label>
-                        <select id="tbl-periodo"></select>
+                        <select id="tbl-periodo" multiple></select>
                     </div>
                     <div class="sf-group">
                         <label>Fuente</label>
                         <select id="tbl-fuente" multiple>
                             <option value="TODAS">Todas las Fuentes</option>
-                            <option value="10" selected>10 - TESORO DE LA PROVINCIA</option>
-                            <option value="11" selected>11 - RECURSOS PROPIOS</option>
-                            <option value="12" selected>12 - FINANCIAMIENTO INTERNO</option>
-                            <option value="13" selected>13 - NACIONAL CON AFECTACIÓN ESPECÍFICA</option>
-                            <option value="14" selected>14 - PROVINCIAL CON AFECTACIÓN ESPECÍFICA</option>
+                            <option value="10">10 - TESORO DE LA PROVINCIA</option>
+                            <option value="11">11 - RECURSOS PROPIOS</option>
+                            <option value="12">12 - FINANCIAMIENTO INTERNO</option>
+                            <option value="13">13 - NACIONAL CON AFECTACIÓN ESPECÍFICA</option>
+                            <option value="14">14 - PROVINCIAL CON AFECTACIÓN ESPECÍFICA</option>
                         </select>
                     </div>
                     <div class="sf-group">
@@ -330,9 +330,10 @@
                                 <th class="numeric">Comprometido</th>
                                 <th class="numeric">Ordenado</th>
                                 <th class="numeric">Comp/Vigente (%)</th>
+                                <th class="numeric">Ord/Vigente (%)</th>
                             </tr>
                         </thead>
-                        <tbody><tr><td colspan="5" style="text-align:center;">Cargando datos...</td></tr></tbody>
+                        <tbody><tr><td colspan="6" style="text-align:center;">Cargando datos...</td></tr></tbody>
                         <tfoot>
                             <tr>
                                 <td>TOTAL</td>
@@ -340,6 +341,7 @@
                                 <td class="numeric" id="table-total-comp">$0</td>
                                 <td class="numeric" id="table-total-ord">$0</td>
                                 <td class="numeric" id="table-total-peso">0.00%</td>
+                                <td class="numeric" id="table-total-peso-ord">0.00%</td>
                             </tr>
                         </tfoot>
                     </table>
@@ -352,24 +354,24 @@
                 <div class="info-tooltip" data-tooltip="Comprometido y Ordenado vs Crédito Vigente. Línea roja = ejecución teórica.">?</div>
                 <div class="section-header">
                     <div>
-                        <h2 class="section-title">Avance de Ejecución por Partida</h2>
+                        <h2 class="section-title">Avance de Ejecución por Partida (Acumulado)</h2>
                         <p class="section-subtitle">Comprometido y Ordenado respecto al Crédito Vigente</p>
                     </div>
                 </div>
                 <div class="section-filters">
                     <div class="sf-group">
                         <label>Período</label>
-                        <select id="av-periodo"></select>
+                        <select id="av-periodo" multiple></select>
                     </div>
                     <div class="sf-group">
                         <label>Fuente</label>
                         <select id="av-fuente" multiple>
                             <option value="TODAS">Todas las Fuentes</option>
-                            <option value="10" selected>10 - TESORO DE LA PROVINCIA</option>
-                            <option value="11" selected>11 - RECURSOS PROPIOS</option>
-                            <option value="12" selected>12 - FINANCIAMIENTO INTERNO</option>
-                            <option value="13" selected>13 - NACIONAL CON AFECTACIÓN ESPECÍFICA</option>
-                            <option value="14" selected>14 - PROVINCIAL CON AFECTACIÓN ESPECÍFICA</option>
+                            <option value="10">10 - TESORO DE LA PROVINCIA</option>
+                            <option value="11">11 - RECURSOS PROPIOS</option>
+                            <option value="12">12 - FINANCIAMIENTO INTERNO</option>
+                            <option value="13">13 - NACIONAL CON AFECTACIÓN ESPECÍFICA</option>
+                            <option value="14">14 - PROVINCIAL CON AFECTACIÓN ESPECÍFICA</option>
                         </select>
                     </div>
                     <div class="sf-group">
@@ -442,7 +444,7 @@
             </div>
         </footer>
     </div>
-    <script src="script_gasto.js?v=20260404v4"></script>
+    <script src="script_gasto.js?v=20260416v1"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const t = document.getElementById('mobileNavToggle');

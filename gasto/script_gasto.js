@@ -3,10 +3,10 @@ let rawData = [];
 let ratioChartInstance = null;
 let waterfallChartInstance = null;
 
+// Partidas 700, 800, 900 eliminadas del heatmap y gráficos
 const ORDEN_PARTIDAS = [
     "GASTOS EN PERSONAL", "BIENES DE CONSUMO", "SERVICIOS NO PERSONALES",
-    "BIENES DE USO", "TRANSFERENCIAS", "ACTIVOS FINANCIEROS",
-    "SERVICIO DE LA DEUDA", "OTROS GASTOS", "GASTOS FIGURATIVOS"
+    "BIENES DE USO", "TRANSFERENCIAS", "ACTIVOS FINANCIEROS"
 ];
 const CODIGOS_PARTIDA = {
     "GASTOS EN PERSONAL": "100", "BIENES DE CONSUMO": "200",
@@ -35,40 +35,41 @@ const ORDEN_JURISDICCIONES = [
     "INSTITUTO DE PREVISION SOCIAL", "INSTITUTO DE OBRA SOCIAL DE CORRIENTES",
     "DIRECCIÓN PROVINCIAL DE ENERGIA DE CORRIENTES"
 ];
+// Sin prefijo 'Min.' — nombres resumidos limpios
 const SHORT_JURISDICCIONES = {
-    "MINISTERIO DE SEGURIDAD": "MIN. SEGURIDAD",
-    "MINISTERIO DE HACIENDA Y FINANZAS": "MIN. HACIENDA",
-    "MINISTERIO DE EDUCACIÓN": "MIN. EDUCACIÓN",
-    "MINISTERIO DE SALUD PÚBLICA": "MIN. SALUD",
-    "MINISTERIO DE PRODUCCIÓN": "MIN. PROD",
-    "MINISTERIO DE OBRAS Y SERVICIOS PÚBLICOS": "MIN. OBRAS",
+    "MINISTERIO DE SEGURIDAD": "SEGURIDAD",
+    "MINISTERIO DE HACIENDA Y FINANZAS": "HACIENDA Y FINANZAS",
+    "MINISTERIO DE EDUCACIÓN": "EDUCACIÓN",
+    "MINISTERIO DE SALUD PÚBLICA": "SALUD PÚBLICA",
+    "MINISTERIO DE PRODUCCIÓN": "PRODUCCIÓN",
+    "MINISTERIO DE OBRAS Y SERVICIOS PÚBLICOS": "OBRAS PÚBLICAS",
     "MINISTERIO SECRETARIA GENERAL": "SEC. GRAL",
-    "TRIBUNAL DE CUENTAS": "TRIB. CTAS",
-    "PODER JUDICIAL": "POD. JUDICIAL",
-    "PODER LEGISLATIVO": "POD. LEG",
-    "FISCALIA DE ESTADO": "FISCALIA",
-    "MINISTERIO DE CIENCIA Y TECNOLOGIA": "MIN. CIA Y TEC",
-    "MINISTERIO DE COORDINACIÓN Y PLANIFICACIÓN": "MIN. COORDINACION",
-    "MINISTERIO DE DESARROLLO SOCIAL": "DESARROLLO SOC",
-    "MINISTERIO DE JUSTICIA Y DERECHOS HUMANOS": "MIN. JUSTICIA",
+    "TRIBUNAL DE CUENTAS": "TRIBUNAL CTAS",
+    "PODER JUDICIAL": "PODER JUDICIAL",
+    "PODER LEGISLATIVO": "PODER LEG.",
+    "FISCALIA DE ESTADO": "FISCALÍA",
+    "MINISTERIO DE CIENCIA Y TECNOLOGIA": "CIENCIA Y TEC",
+    "MINISTERIO DE COORDINACIÓN Y PLANIFICACIÓN": "COORDINACIÓN",
+    "MINISTERIO DE DESARROLLO SOCIAL": "DESARROLLO SOC.",
+    "MINISTERIO DE JUSTICIA Y DERECHOS HUMANOS": "JUSTICIA",
     "SECRETARIA DE ENERGIA": "SEC. ENERGIA",
-    "MINISTERIO DE INDUSTRIA TRABAJO Y COMERCIO": "MIN. INDUSTRIA",
-    "MINISTERIO DE TURISMO": "MIN. TURISMO",
-    "INSTITUTO DE LOTERIA Y CASINOS": "LOTERIA",
-    "INSTITUTO DE CARDIOLOGIA DE CORRIENTES": "INST. CARDIOLOGIA",
+    "MINISTERIO DE INDUSTRIA TRABAJO Y COMERCIO": "INDUSTRIA Y COMERCIO",
+    "MINISTERIO DE TURISMO": "TURISMO",
+    "INSTITUTO DE LOTERIA Y CASINOS": "LOTERIA Y CASINOS",
+    "INSTITUTO DE CARDIOLOGIA DE CORRIENTES": "INST. CARDIOLOGÍA",
     "INSTITUTO PROVINCIAL DEL TABACO": "INST. TABACO",
     "INSTITUTO CORRENTINO DEL AGUA Y DEL AMBIENTE": "ICAA",
     "INSTITUTO DE CULTURA DE CORRIENTES": "INST. CULTURA",
-    "INSTITUTO DE VIVIENDA DE CORRIENTES": "VIVIENDA",
-    "DIRECCIÓN PROVINCIAL DEL VIALIDAD": "VIALIDAD",
-    "ADMINISTRACIÓN DE OBRAS SANITARIAS DE CORRIENTES": "ADM. OBR SANITARIAS",
-    "INSTITUTO DE DESARROLLO RURAL DE CORRIENTES": "DES. RURAL",
-    "CENTRO DE ONCOLOGIA 'ANNA ROCCA DE BONATTI'": "ANNA BONATTI",
-    "ENTE PROVINCIAL REGULADOR ELECTRICO": "ENT. REG. ELECT",
-    "AGENCIA CORRENTINA DE BIENES DEL ESTADO": "AG. BIENES ESTADO",
-    "INSTITUTO DE PREVISION SOCIAL": "IPS",
-    "INSTITUTO DE OBRA SOCIAL DE CORRIENTES": "IOSCOR",
-    "DIRECCIÓN PROVINCIAL DE ENERGIA DE CORRIENTES": "DPEC"
+    "INSTITUTO DE VIVIENDA DE CORRIENTES": "VIVIENDA (INVICO)",
+    "DIRECCIÓN PROVINCIAL DEL VIALIDAD": "VIALIDAD PROV.",
+    "ADMINISTRACIÓN DE OBRAS SANITARIAS DE CORRIENTES": "OBRAS SANITARIAS",
+    "INSTITUTO DE DESARROLLO RURAL DE CORRIENTES": "DESARROLLO RURAL",
+    "CENTRO DE ONCOLOGIA 'ANNA ROCCA DE BONATTI'": "CENTRO ONCOLOGÍA",
+    "ENTE PROVINCIAL REGULADOR ELECTRICO": "EPRE",
+    "AGENCIA CORRENTINA DE BIENES DEL ESTADO": "BIENES DEL ESTADO",
+    "INSTITUTO DE PREVISION SOCIAL": "PREVISIÓN SOCIAL (IPS)",
+    "INSTITUTO DE OBRA SOCIAL DE CORRIENTES": "OBRA SOCIAL (IOSCOR)",
+    "DIRECCIÓN PROVINCIAL DE ENERGIA DE CORRIENTES": "ENERGÍA (DPEC)"
 };
 const partidaColors = {
     'GASTOS EN PERSONAL': '#719C29', 'BIENES DE CONSUMO': '#356F23',
@@ -79,10 +80,11 @@ const partidaColors = {
 };
 const FUENTE_VALUES = ['10', '11', '12', '13', '14'];
 
-const formaterARS = new Intl.NumberFormat('es-AR', {
-    style: 'currency', currency: 'ARS',
-    minimumFractionDigits: 0, maximumFractionDigits: 0
-});
+// Formato en Miles de Millones: $xxx M (igual que en monitor-mensual)
+const numFmt = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+function format1M(val) {
+    return '$' + numFmt.format(Math.round(val / 1_000_000)) + ' M';
+}
 
 const tsInstances = {};
 
@@ -93,13 +95,31 @@ async function initDashboard() {
         const response = await fetch('./gasto_data.json');
         if (!response.ok) throw new Error('Error loading gasto data');
         rawData = await response.json();
+
+        // --- FIX Bug sesión: mostrar usuario y conectar botón salir ---
+        const currentUser = Auth.getCurrentUser();
+        if (currentUser) {
+            const userNameEl = document.getElementById('userName');
+            if (userNameEl) userNameEl.textContent = currentUser.nombre;
+        }
+        const btnLogout = document.getElementById('btnLogout');
+        if (btnLogout) {
+            btnLogout.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (confirm('¿Está seguro que desea cerrar sesión?')) {
+                    Auth.logout();
+                }
+            });
+        }
+
         populateAllFilters();
         setupEventListeners();
         updateAll();
     } catch (error) {
         console.error("Dashboard init error:", error);
         const tb = document.querySelector('#gasto-table tbody');
-        if (tb) tb.innerHTML = `<tr><td colspan="5" style="text-align:center;color:red;">Error cargando datos.</td></tr>`;
+        if (tb) tb.innerHTML = `<tr><td colspan="6" style="text-align:center;color:red;">Error cargando datos.</td></tr>`;
     }
 }
 
@@ -109,8 +129,9 @@ async function initDashboard() {
 //   - "TODAS" option that selects/deselects all
 //   - Summary text instead of individual tags
 //   - Checkbox plugin
+//   - Optional defaultVals to set initial selection
 // ========================
-function createMultiSelect(selId, allIndividualValues, allLabel, onChangeCb) {
+function createMultiSelect(selId, allIndividualValues, allLabel, onChangeCb, defaultVals = null) {
     const ts = new TomSelect(`#${selId}`, {
         plugins: ['checkbox_options'],
         maxOptions: null,
@@ -197,9 +218,15 @@ function createMultiSelect(selId, allIndividualValues, allLabel, onChangeCb) {
         if (onChangeCb) onChangeCb();
     });
 
-    // Initial state: select all + TODAS
-    ts.setValue(['TODAS', ...allIndividualValues], true);
-    ts._prevHadTodas = true;
+    // Initial state
+    if (defaultVals) {
+        ts.setValue(defaultVals, true);
+        ts._prevHadTodas = defaultVals.includes('TODAS');
+    } else {
+        // select all + TODAS
+        ts.setValue(['TODAS', ...allIndividualValues], true);
+        ts._prevHadTodas = true;
+    }
     updateMultiSummary(ts);
 
     tsInstances[selId] = ts;
@@ -267,7 +294,8 @@ function populateAllFilters() {
     const jurisdicciones = ORDEN_JURISDICCIONES.filter(j => jurisVistasEnBD.has(j));
     const lastPeriodo = periodos.length > 0 ? periodos[periodos.length - 1] : '';
 
-    function fillPeriodo(selId) {
+    // Fill simple periodo selects (for Composición)
+    function fillPeriodoOptions(selId) {
         const sel = document.getElementById(selId);
         if (!sel) return;
         sel.innerHTML = '';
@@ -276,14 +304,11 @@ function populateAllFilters() {
             o.value = p; o.textContent = formatPeriodo(p);
             sel.appendChild(o);
         });
-        sel.value = lastPeriodo;
     }
 
     function fillJurisOptions(selId) {
         const sel = document.getElementById(selId);
         if (!sel) return;
-        // Keep the TODAS option from HTML, add jurisdicciones
-        // Clear existing options after TODAS
         const todasOpt = sel.querySelector('option[value="TODAS"]');
         sel.innerHTML = '';
         if (todasOpt) sel.appendChild(todasOpt);
@@ -294,9 +319,9 @@ function populateAllFilters() {
         });
     }
 
-    // Periodos
-    fillPeriodo('tbl-periodo');
-    fillPeriodo('av-periodo');
+    // Periodo options for multi-selects (Composición y Avance)
+    fillPeriodoOptions('tbl-periodo');
+    fillPeriodoOptions('av-periodo');
 
     // Jurisdiccion options (before TomSelect init)
     fillJurisOptions('tbl-jurisdiccion');
@@ -306,15 +331,19 @@ function populateAllFilters() {
     Object.values(tsInstances).forEach(ts => { try { ts.destroy(); } catch(e) {} });
 
     // Create multi-selects
-    // Heatmap fuente
-    createMultiSelect('hm-fuente', FUENTE_VALUES, 'Todas las Fuentes', updateHeatmap);
+    // Heatmap fuente — default solo fuente 10
+    createMultiSelect('hm-fuente', FUENTE_VALUES, 'Todas las Fuentes', updateHeatmap, ['10']);
 
-    // Table
-    createMultiSelect('tbl-fuente', FUENTE_VALUES, 'Todas las Fuentes', updateTable);
+    // Table — periodos multi-select (default: último periodo)
+    createMultiSelect('tbl-periodo', periodos, 'Todos los Periodos', updateTable, [lastPeriodo]);
+    // Table fuente — default solo fuente 10
+    createMultiSelect('tbl-fuente', FUENTE_VALUES, 'Todas las Fuentes', updateTable, ['10']);
     createMultiSelect('tbl-jurisdiccion', jurisdicciones, 'Todas las Jurisdicciones', updateTable);
 
-    // Avance
-    createMultiSelect('av-fuente', FUENTE_VALUES, 'Todas las Fuentes', updateRatioChart);
+    // Avance — periodos multi-select (default: TODOS = acumulado total)
+    createMultiSelect('av-periodo', periodos, 'Todos los Periodos', updateRatioChart);
+    // Avance fuente — default solo fuente 10
+    createMultiSelect('av-fuente', FUENTE_VALUES, 'Todas las Fuentes', updateRatioChart, ['10']);
     createMultiSelect('av-jurisdiccion', jurisdicciones, 'Todas las Jurisdicciones', updateRatioChart);
 
     // Waterfall (simple selects, just populate options)
@@ -347,14 +376,6 @@ function setupEventListeners() {
     if (hmEstado) hmEstado.addEventListener('change', updateHeatmap);
     const hmJurisGroup = document.getElementById('hm-juris-group');
     if (hmJurisGroup) hmJurisGroup.addEventListener('change', updateHeatmap);
-
-    // Table periodo
-    const tblP = document.getElementById('tbl-periodo');
-    if (tblP) tblP.addEventListener('change', updateTable);
-
-    // Avance periodo
-    const avP = document.getElementById('av-periodo');
-    if (avP) avP.addEventListener('change', updateRatioChart);
 
     // Waterfall (all simple selects)
     ['wf-estado', 'wf-jurisdiccion', 'wf-partida', 'wf-fuente'].forEach(id => {
@@ -403,12 +424,22 @@ function updateHeatmap() {
         if (d.estado === 'Credito Vigente' && d.periodo === ultimoPeriodo) vigente[key] = (vigente[key] || 0) + d.monto;
     });
 
-    const visibleJuris = jurisdicciones.filter(j => {
+    let visibleJuris = jurisdicciones.filter(j => {
         if (jurisGroup === 'TODAS') return true;
         const isMin = j.includes('MINISTERIO');
         if (jurisGroup === 'MINISTERIOS') return isMin;
         if (jurisGroup === 'RESTO') return !isMin;
         return true;
+    });
+
+    // Ordenar entes de izquierda a derecha de mayor a menor crédito vigente
+    visibleJuris.sort((a, b) => {
+        let vigA = 0, vigB = 0;
+        ORDEN_PARTIDAS.forEach(p => {
+            vigA += (vigente[`${p}|${a}`] || 0);
+            vigB += (vigente[`${p}|${b}`] || 0);
+        });
+        return vigB - vigA;
     });
 
     let html = '<div class="heatmap-scroll-wrapper"><table class="heatmap-table">';
@@ -419,9 +450,10 @@ function updateHeatmap() {
     });
     html += '</tr></thead><tbody>';
 
+    // Filas: "GASTO EN PERSONAL - 100" (nombre primero - código)
     ORDEN_PARTIDAS.forEach(p => {
         const code = CODIGOS_PARTIDA[p];
-        html += `<tr><td class="heatmap-partida-label" title="${p}">${code}</td>`;
+        html += `<tr><td class="heatmap-partida-label" title="${p}">${p} - ${code}</td>`;
         visibleJuris.forEach(j => {
             const key = `${p}|${j}`;
             const comp = estadoAcum[key] || 0;
@@ -449,18 +481,37 @@ function interpolateColor(c1, c2, t) {
 
 // ========================
 // 2. TABLA COMPOSICIÓN
+// (Multiselect de periodos: acumula Comp y Ord, Vigente del último seleccionado)
 // ========================
 function updateTable() {
-    const periodo = getSimpleVal('tbl-periodo') || '';
+    // Leer periodos seleccionados del multi-select
+    const periodoSet = getMultiValues('tbl-periodo');
+    const allPeriodos = [...new Set(rawData.map(d => d.periodo))].sort();
+    let selectedPeriodos = allPeriodos; // si es null (TODAS), usar todos
+    if (periodoSet) {
+        selectedPeriodos = allPeriodos.filter(p => periodoSet.has(p));
+    }
+    const maxPeriodo = selectedPeriodos.length > 0 ? selectedPeriodos[selectedPeriodos.length - 1] : '';
+
     const jurisSet = getMultiValues('tbl-jurisdiccion');
     const fuenteSet = getMultiValues('tbl-fuente');
 
+    // Titulo dinámico
     const titleEl = document.getElementById('composicion-title');
-    if (titleEl && periodo) titleEl.textContent = `Composición del Gasto de ${formatPeriodo(periodo)}`;
+    if (titleEl && selectedPeriodos.length > 0) {
+        if (selectedPeriodos.length === 1) {
+            titleEl.textContent = `Composición del Gasto de ${formatPeriodo(selectedPeriodos[0])}`;
+        } else {
+            titleEl.textContent = `Composición del Gasto (Acumulado hasta ${formatPeriodo(maxPeriodo)})`;
+        }
+    }
 
-    const dataV = rawData.filter(d => d.periodo === periodo && d.estado === 'Credito Vigente' && matchJurisMulti(d, jurisSet) && matchFuenteMulti(d, fuenteSet));
-    const dataC = rawData.filter(d => d.periodo === periodo && d.estado === 'Comprometido' && matchJurisMulti(d, jurisSet) && matchFuenteMulti(d, fuenteSet));
-    const dataO = rawData.filter(d => d.periodo === periodo && d.estado === 'Ordenado' && matchJurisMulti(d, jurisSet) && matchFuenteMulti(d, fuenteSet));
+    // Vigente: solo del último periodo seleccionado
+    // Comp y Ord: sumar todos los periodos seleccionados
+    const matchPeriodo = (d) => !periodoSet || periodoSet.has(d.periodo);
+    const dataV = rawData.filter(d => d.periodo === maxPeriodo && d.estado === 'Credito Vigente' && matchJurisMulti(d, jurisSet) && matchFuenteMulti(d, fuenteSet));
+    const dataC = rawData.filter(d => matchPeriodo(d) && d.estado === 'Comprometido' && matchJurisMulti(d, jurisSet) && matchFuenteMulti(d, fuenteSet));
+    const dataO = rawData.filter(d => matchPeriodo(d) && d.estado === 'Ordenado' && matchJurisMulti(d, jurisSet) && matchFuenteMulti(d, fuenteSet));
 
     const gV = {}, gC = {}, gO = {};
     ORDEN_PARTIDAS.forEach(p => { gV[p] = 0; gC[p] = 0; gO[p] = 0; });
@@ -471,7 +522,12 @@ function updateTable() {
     let tV = 0, tC = 0, tO = 0;
     const rows = ORDEN_PARTIDAS.map(p => {
         tV += gV[p]; tC += gC[p]; tO += gO[p];
-        return { partida: p, codigo: CODIGOS_PARTIDA[p], vigente: gV[p], comprometido: gC[p], ordenado: gO[p], peso: gV[p] > 0 ? (gC[p] / gV[p]) * 100 : 0 };
+        return {
+            partida: p, codigo: CODIGOS_PARTIDA[p],
+            vigente: gV[p], comprometido: gC[p], ordenado: gO[p],
+            pesoComp: gV[p] > 0 ? (gC[p] / gV[p]) * 100 : 0,
+            pesoOrd: gV[p] > 0 ? (gO[p] / gV[p]) * 100 : 0
+        };
     });
 
     const tbody = document.querySelector('#gasto-table tbody');
@@ -480,31 +536,56 @@ function updateTable() {
         const tr = document.createElement('tr');
         const pip = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${partidaColors[item.partida]||'#fff'};margin-right:8px;"></span>`;
         tr.innerHTML = `<td>${pip}${item.codigo} - ${item.partida}</td>
-            <td class="numeric">${formaterARS.format(item.vigente)}</td>
-            <td class="numeric">${formaterARS.format(item.comprometido)}</td>
-            <td class="numeric">${formaterARS.format(item.ordenado)}</td>
-            <td class="numeric">${item.peso.toFixed(2)}%</td>`;
+            <td class="numeric">${format1M(item.vigente)}</td>
+            <td class="numeric">${format1M(item.comprometido)}</td>
+            <td class="numeric">${format1M(item.ordenado)}</td>
+            <td class="numeric">${item.pesoComp.toFixed(2)}%</td>
+            <td class="numeric">${item.pesoOrd.toFixed(2)}%</td>`;
         tbody.appendChild(tr);
     });
 
-    document.getElementById('table-total-vigente').textContent = formaterARS.format(tV);
-    document.getElementById('table-total-comp').textContent = formaterARS.format(tC);
-    document.getElementById('table-total-ord').textContent = formaterARS.format(tO);
+    document.getElementById('table-total-vigente').textContent = format1M(tV);
+    document.getElementById('table-total-comp').textContent = format1M(tC);
+    document.getElementById('table-total-ord').textContent = format1M(tO);
     document.getElementById('table-total-peso').textContent = tV > 0 ? ((tC / tV) * 100).toFixed(2) + '%' : '0.00%';
+    document.getElementById('table-total-peso-ord').textContent = tV > 0 ? ((tO / tV) * 100).toFixed(2) + '%' : '0.00%';
 }
 
 // ========================
 // 3. AVANCE DE EJECUCIÓN
+// (Multiselect de periodos: default = TODOS = acumulado total;
+//  línea teórica = numSeleccionados/12)
 // ========================
 function updateRatioChart() {
-    const periodo = getSimpleVal('av-periodo') || '';
+    // Leer periodos seleccionados
+    const periodoSet = getMultiValues('av-periodo');
+    const allPeriodos = [...new Set(rawData.map(d => d.periodo))].sort();
+    let selectedPeriodos = allPeriodos;
+    if (periodoSet) {
+        selectedPeriodos = allPeriodos.filter(p => periodoSet.has(p));
+    }
+    const maxPeriodo = selectedPeriodos.length > 0 ? selectedPeriodos[selectedPeriodos.length - 1] : '';
+    const numMeses = selectedPeriodos.length;
+
     const jurisSet = getMultiValues('av-jurisdiccion');
     const fuenteSet = getMultiValues('av-fuente');
 
-    const currentYear = periodo.split('-')[0];
-    const fC = rawData.filter(d => d.periodo <= periodo && d.periodo.startsWith(currentYear) && d.estado === 'Comprometido' && matchJurisMulti(d, jurisSet) && matchFuenteMulti(d, fuenteSet));
-    const fV = rawData.filter(d => d.periodo === periodo && d.estado === 'Credito Vigente' && matchJurisMulti(d, jurisSet) && matchFuenteMulti(d, fuenteSet));
-    const fO = rawData.filter(d => d.periodo <= periodo && d.periodo.startsWith(currentYear) && d.estado === 'Ordenado' && matchJurisMulti(d, jurisSet) && matchFuenteMulti(d, fuenteSet));
+    // Subtítulo dinámico aclarando acumulacion
+    const section = document.querySelector('#ratioChart')?.closest('.chart-container');
+    const subtitle = section?.querySelector('.section-subtitle');
+    if (subtitle) {
+        if (numMeses === 1) {
+            subtitle.textContent = `Comprometido y Ordenado respecto al Crédito Vigente — ${formatPeriodo(selectedPeriodos[0])}`;
+        } else {
+            subtitle.textContent = `Comprometido y Ordenado respecto al Crédito Vigente (Acumulado de ${numMeses} meses)`;
+        }
+    }
+
+    // Filtros
+    const matchP = (d) => !periodoSet || periodoSet.has(d.periodo);
+    const fC = rawData.filter(d => matchP(d) && d.estado === 'Comprometido' && matchJurisMulti(d, jurisSet) && matchFuenteMulti(d, fuenteSet));
+    const fV = rawData.filter(d => d.periodo === maxPeriodo && d.estado === 'Credito Vigente' && matchJurisMulti(d, jurisSet) && matchFuenteMulti(d, fuenteSet));
+    const fO = rawData.filter(d => matchP(d) && d.estado === 'Ordenado' && matchJurisMulti(d, jurisSet) && matchFuenteMulti(d, fuenteSet));
 
     const gC = {}, gV = {}, gO = {};
     ORDEN_PARTIDAS.forEach(p => { gC[p] = 0; gV[p] = 0; gO[p] = 0; });
@@ -517,8 +598,8 @@ function updateRatioChart() {
     const rO = active.map(p => gV[p] > 0 ? (gO[p] / gV[p]) * 100 : 0);
     const labels = active.map(p => `${CODIGOS_PARTIDA[p]} - ${p}`);
 
-    const parts = periodo.split('-');
-    const targetRatio = parts.length === 2 ? (parseInt(parts[1], 10) / 12) * 100 : 0;
+    // Línea teórica: numMeses / 12
+    const targetRatio = (numMeses / 12) * 100;
 
     const ctx = document.getElementById('ratioChart');
     if (!ctx) return;
@@ -533,7 +614,7 @@ function updateRatioChart() {
         data: {
             labels,
             datasets: [
-                { type: 'line', label: 'Ejecución Teórica (%)', data: labels.map(() => targetRatio), borderColor: '#ef4444', borderWidth: 2, borderDash: [5, 5], pointRadius: 0, fill: false, order: 1 },
+                { type: 'line', label: `Ejecución Teórica (${numMeses}/12)`, data: labels.map(() => targetRatio), borderColor: '#ef4444', borderWidth: 2, borderDash: [5, 5], pointRadius: 0, fill: false, order: 1 },
                 { type: 'bar', label: '% Comprometido', data: rC, backgroundColor: origLabels.map(p => (partidaColors[p] || '#3b82f6') + 'b3'), borderRadius: 4, order: 2 },
                 { type: 'bar', label: '% Ordenado', data: rO, backgroundColor: origLabels.map(p => partidaColors[p] || '#3b82f6'), borderRadius: 4, order: 3 }
             ]
@@ -610,6 +691,8 @@ function updateWaterfallChart() {
 
     if (waterfallChartInstance) waterfallChartInstance.destroy();
 
+    const fmtARS = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
     waterfallChartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -632,7 +715,7 @@ function updateWaterfallChart() {
                             const monto = monthlyData[idx];
                             const height = raw[1] - raw[0];
                             return [
-                                `${estado} del mes: ${formaterARS.format(monto)}`,
+                                `${estado} del mes: ${fmtARS.format(monto)}`,
                                 `Ejecutado: ${(height * 100).toFixed(2)}% del Crédito Vigente`
                             ];
                         }
