@@ -34,5 +34,11 @@
     "password": "IPECD2026",
     "name": "Admin",
     "role": "user"
+  },
+  "jgazzo": {
+    "id": 7,
+    "password": "tesoro",
+    "name": "Jgazzo",
+    "role": "user"
   }
 }
