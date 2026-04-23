@@ -189,11 +189,9 @@ export default function MonitorMensualDashboard() {
 
   return (
     <>
-      <header className="dashboard-header">
-        <div className="title-block">
-          <h1 className="text-gradient dashboard-title">Análisis Mensual RON</h1>
-        </div>
-        <div className="period-select-wrapper">
+      <header className="dashboard-header" style={{ justifyContent: "space-between", alignItems: "center" }}>
+        <h1 className="dashboard-title" style={{ textAlign: "left", margin: 0 }}>Recursos Disponibles Totales</h1>
+        <div className="period-select-wrapper" style={{ position: "static" }}>
           <label htmlFor="month-selector-monitor" className="period-label">
             Período:
           </label>
@@ -219,12 +217,8 @@ export default function MonitorMensualDashboard() {
 
       {/* SECCIÓN: RESUMEN TOTAL */}
       <section className="section-group">
-        <div className="section-header-block">
-          <h2>Recursos Disponibles Totales</h2>
-          <p>{vm.mainSubtitle}</p>
-        </div>
-        <div className="hero-grid-flex">
-          <article className="kpi-card" style={{ borderTop: "4px solid var(--accent-primary)" }}>
+        <div className="hero-grid-flex" style={{ marginTop: "1rem" }}>
+          <article className="kpi-card" style={{ border: "1px solid #10b981" }}>
             <div className="info-tooltip" data-tooltip="Suma de RON Disponible + ROP Disponible.">?</div>
             <div className="kpi-label">Recaudación Total Disponible</div>
             <div className="kpi-value">{vm.resumen.totalDisp}</div>
@@ -232,109 +226,115 @@ export default function MonitorMensualDashboard() {
               RON: <strong>{vm.resumen.ronDisp}</strong> | ROP: <strong>{vm.resumen.ropDisp}</strong>
             </div>
           </article>
-          <article className="kpi-card" style={{ borderTop: "4px solid var(--accent-success)" }}>
+          <article className="kpi-card" style={{ border: "1px solid #10b981" }}>
             <div className="info-tooltip" data-tooltip="Monto tras descontar Masa Salarial.">?</div>
             <div className="kpi-label">Recursos para Gastos Operativos e Inversión</div>
-            <div className={`kpi-value ${vm.resumen.postClass}`.trim()}>{vm.resumen.postSueldos}</div>
+            <div className={`kpi-value ${vm.resumen.postClass}`.trim()} style={{ color: "#10b981" }}>{vm.resumen.postSueldos}</div>
             <div className="kpi-sub">Monto remanente tras cubrir salarios</div>
           </article>
         </div>
-        <p className="source-text">Fuente: INDEC y Ministerio de Economía de la Nación</p>
+        <p className="source-text" style={{ padding: "0 3%" }}>Fuente: INDEC y Ministerio de Economía de la Nación</p>
       </section>
 
+
       {/* SECCIÓN: RON */}
-      <section className="section-group">
+      <section className="section-group" style={{ marginTop: "2rem" }}>
         <div className="section-header-block">
-          <h2>Recursos de Origen Nacional (RON)</h2>
-          <p>Análisis de transferencias automáticas nacionales del período.</p>
+          <h2 style={{ textAlign: "left", fontSize: "1.5rem", fontWeight: "700" }}>Recursos de Origen Nacional (RON)</h2>
         </div>
+
         <div className="hero-grid-flex">
-          <article className="kpi-card">
+          <article className="kpi-card" style={{ borderTop: "4px solid #10b981" }}>
             <div className="kpi-label">{`RON Disponible ${vm.monthName} ${vm.currentYear}`}</div>
             <div className="kpi-value">{vm.recaudacion.current}</div>
             <div className="kpi-sub">
               RON Neta: <strong>{vm.recaudacion.netaCurr}</strong>
             </div>
           </article>
-          <article className="kpi-card">
+          <article className="kpi-card" style={{ borderTop: "4px solid #e2e8f0" }}>
             <div className="kpi-label">{`RON Disponible ${vm.monthName} ${vm.prevYear}`}</div>
-            <div className="kpi-value" style={{ color: "var(--text-secondary)" }}>{vm.recaudacion.prev}</div>
+            <div className="kpi-value">{vm.recaudacion.prev}</div>
+
             <div className="kpi-sub">
               RON Neta: <strong>{vm.recaudacion.netaPrev}</strong>
             </div>
           </article>
-          <article className="kpi-card">
+          <article className="kpi-card" style={{ borderTop: "4px solid #10b981" }}>
             <div className="kpi-label">Variación Nominal RON</div>
-            <div className={vm.recaudacion.varNomClass}>{vm.recaudacion.varNomPct}</div>
+            <div className={vm.recaudacion.varNomClass} style={{ color: "#10b981" }}>{vm.recaudacion.varNomPct}</div>
             <div className="kpi-sub">
               <strong>{vm.recaudacion.varNomAbs}</strong> Interanual
             </div>
           </article>
-          <article className="kpi-card">
+          <article className="kpi-card" style={{ borderTop: "4px solid #b45309" }}>
             <div className="kpi-label">Variación Real RON</div>
-            <div className={vm.recaudacion.realPctClass}>{vm.recaudacion.realPct}</div>
+            <div className={vm.recaudacion.realPctClass} style={{ color: "#b45309" }}>{vm.recaudacion.realPct}</div>
             <div className="kpi-sub">
               <strong>{vm.recaudacion.realAbs}</strong> * Ajustado por inflación
             </div>
           </article>
         </div>
-        <p className="source-text">Fuente: INDEC y Ministerio de Economía de la Nación</p>
+        <p className="source-text" style={{ padding: "0 3%" }}>Fuente: INDEC y Ministerio de Economía de la Nación</p>
+
       </section>
 
       {/* SECCIÓN: ROP */}
       {vm.rop && (
-        <section className="section-group">
+        <section className="section-group" style={{ marginTop: "2rem" }}>
           <div className="section-header-block">
-            <h2>Recaudación de Origen Provincial (ROP)</h2>
-            <p>Comportamiento de la recaudación propia de la provincia.</p>
+            <h2 style={{ textAlign: "left", fontSize: "1.5rem", fontWeight: "700" }}>Recaudación de Origen Provincial (ROP)</h2>
           </div>
+
           <div className="hero-grid-flex">
-            <article className="kpi-card">
+            <article className="kpi-card" style={{ borderTop: "4px solid #10b981" }}>
               <div className="kpi-label">{`ROP Disponible ${vm.monthName} ${vm.currentYear}`}</div>
               <div className="kpi-value">{vm.rop.dispCurr}</div>
               <div className="kpi-sub">
                 ROP Bruta: <strong>{vm.rop.brutaCurr}</strong>
               </div>
             </article>
-            <article className="kpi-card">
+            <article className="kpi-card" style={{ borderTop: "4px solid #e2e8f0" }}>
               <div className="kpi-label">{`ROP Disponible ${vm.monthName} ${vm.prevYear}`}</div>
-              <div className="kpi-value" style={{ color: "var(--text-secondary)" }}>{vm.rop.dispPrev}</div>
+              <div className="kpi-value">{vm.rop.dispPrev}</div>
+
               <div className="kpi-sub">
                 ROP Bruta: <strong>{vm.rop.brutaPrev}</strong>
               </div>
             </article>
-            <article className="kpi-card">
+            <article className="kpi-card" style={{ borderTop: "4px solid #10b981" }}>
               <div className="kpi-label">Variación Nominal ROP</div>
-              <div className={vm.rop.varNomClass}>{vm.rop.varNomPct}</div>
+              <div className={vm.rop.varNomClass} style={{ color: "#10b981" }}>{vm.rop.varNomPct}</div>
               <div className="kpi-sub">
                 <strong>{vm.rop.varNomAbs}</strong> Interanual
               </div>
             </article>
-            <article className="kpi-card">
+            <article className="kpi-card" style={{ borderTop: "4px solid #b45309" }}>
               <div className="kpi-label">Variación Real ROP</div>
-              <div className={vm.rop.realPctClass}>{vm.rop.realPct}</div>
+              <div className={vm.rop.realPctClass} style={{ color: "#b45309" }}>{vm.rop.realPct}</div>
               <div className="kpi-sub">
                 <strong>{vm.rop.realAbs}</strong> * Ajustado por inflación
               </div>
             </article>
           </div>
-          <p className="source-text">Fuente: Ministerio de Economía de la Provincia</p>
+          <p className="source-text" style={{ padding: "0 3%" }}>Fuente: Ministerio de Economía de la Provincia</p>
+
         </section>
       )}
 
       {/* SECCIÓN: MUNI */}
       {vm.muni && (
-        <section className="section-group">
+        <section className="section-group" style={{ marginTop: "2rem" }}>
           <div className="section-header-block">
-            <h2>Distribución Municipal</h2>
-            <p>Transferencias realizadas a municipios de la provincia.</p>
+            <h2 style={{ textAlign: "left", fontSize: "1.5rem", fontWeight: "700" }}>Distribución Municipal</h2>
           </div>
+
           <div className="hero-grid-flex">
-            <article className="kpi-card">
+            <article className="kpi-card" style={{ borderTop: "4px solid #10b981" }}>
               <div className="kpi-label">{`Distribución Municipal ${vm.monthName} ${vm.currentYear}`}</div>
-              <div className="kpi-value">{vm.muni.dispCurr}</div>
+              <div className="kpi-value">{vm.muni.current}</div>
               <div className="kpi-sub">RON/ROP distribuida</div>
             </article>
+
             <article className="kpi-card">
               <div className="kpi-label">Variación Nominal</div>
               <div className={vm.muni.varNomClass}>{vm.muni.varNomPct}</div>
@@ -350,9 +350,89 @@ export default function MonitorMensualDashboard() {
               </div>
             </article>
           </div>
-          <p className="source-text">Fuente: INDEC y Ministerio de Economía de la Nación</p>
+          <p className="source-text" style={{ padding: "0 3%" }}>Fuente: INDEC y Ministerio de Economía de la Nación</p>
         </section>
       )}
+
+      {/* SECCIÓN: PRESUPUESTO */}
+      {vm.showPresupuestoSection && vm.presupuesto && (
+        <section className="section-group" style={{ marginTop: "2rem" }}>
+          <div className="section-header-block">
+            <h2 style={{ textAlign: "left", fontSize: "1.5rem", fontWeight: "700" }}>Desempeño Frente a Presupuesto</h2>
+          </div>
+          <div className="hero-grid-flex">
+            <article className="kpi-card" style={{ borderTop: "4px solid #10b981" }}>
+              <div className="kpi-label">RON: DIFERENCIA NOMINAL</div>
+              <div className={vm.presupuesto.diffAbsClass}>{vm.presupuesto.diffAbs}</div>
+              <div className="kpi-sub">
+                Recaudado: <strong>{vm.presupuesto.recaudado}</strong> | Presupuestado: <strong>{vm.presupuesto.esperada}</strong>
+              </div>
+            </article>
+            <article className="kpi-card" style={{ borderTop: "4px solid #10b981" }}>
+              <div className="kpi-label">RON: DIFERENCIA PORCENTUAL</div>
+              <div className={vm.presupuesto.diffPctClass}>{vm.presupuesto.diffPct}</div>
+              <div className="kpi-sub">Brecha respecto al monto presupuestado</div>
+            </article>
+
+            {vm.presupuesto.rop && (
+              <>
+                <article className="kpi-card" style={{ borderTop: "4px solid #10b981" }}>
+                  <div className="kpi-label">ROP: DIFERENCIA NOMINAL</div>
+                  <div className={vm.presupuesto.rop.diffAbsClass}>{vm.presupuesto.rop.diffAbs}</div>
+                  <div className="kpi-sub">
+                    Recaudado: <strong>{vm.presupuesto.rop.recaudado}</strong> | Presupuestado: <strong>{vm.presupuesto.rop.esperada}</strong>
+                  </div>
+                </article>
+                <article className="kpi-card" style={{ borderTop: "4px solid #10b981" }}>
+                  <div className="kpi-label">ROP: DIFERENCIA PORCENTUAL</div>
+                  <div className={vm.presupuesto.rop.diffPctClass}>{vm.presupuesto.rop.diffPct}</div>
+                  <div className="kpi-sub">Brecha respecto al monto presupuestado provincial</div>
+                </article>
+              </>
+            )}
+          </div>
+          <p className="source-text" style={{ padding: "0 3%" }}>Fuente: Ministerio de Economía de la Provincia</p>
+        </section>
+      )}
+
+      {/* SECCIÓN: MASA SALARIAL */}
+      <section className="section-group" style={{ marginTop: "2rem" }}>
+        <div className="section-header-block">
+          <h2 style={{ textAlign: "left", fontSize: "1.5rem", fontWeight: "700" }}>Masa Salarial Total Empleo Provincial</h2>
+        </div>
+        <div className="hero-grid-flex">
+          <article className="kpi-card" style={{ borderTop: "4px solid #3b82f6" }}>
+            <div className="kpi-label">{`Masa Salarial ${vm.monthName} ${vm.currentYear}`}</div>
+            <div className="kpi-value">{vm.masa.current}</div>
+            <div className="kpi-sub">
+              <strong style={{ color: "#3b82f6" }}>{vm.masa.cobCurr}</strong>
+            </div>
+          </article>
+          <article className="kpi-card" style={{ borderTop: "4px solid #e2e8f0" }}>
+            <div className="kpi-label">{`Masa Salarial ${vm.monthName} ${vm.prevYear}`}</div>
+            <div className="kpi-value" style={{ color: "#64748b" }}>{vm.masa.prev}</div>
+            <div className="kpi-sub">
+              <strong>{vm.masa.cobPrev}</strong>
+            </div>
+          </article>
+          <article className="kpi-card" style={{ borderTop: "4px solid #3b82f6" }}>
+            <div className="kpi-label">Variación Nominal Masa Salarial</div>
+            <div className={vm.masa.varNomPctClass} style={{ color: "#3b82f6" }}>{vm.masa.varNomPct}</div>
+            <div className="kpi-sub">
+              <strong>{vm.masa.varNomAbs}</strong> Interanual
+            </div>
+          </article>
+          <article className="kpi-card" style={{ borderTop: "4px solid #3b82f6" }}>
+            <div className="kpi-label">Variación Real Masa Salarial</div>
+            <div className={vm.masa.realPctClass} style={{ color: "#3b82f6" }}>{vm.masa.realPct}</div>
+            <div className="kpi-sub">
+              <strong>{vm.masa.realAbs}</strong> * Ajustado por inflación
+            </div>
+          </article>
+        </div>
+        <p className="source-text" style={{ padding: "0 3%" }}>Fuente: Contaduría General de la Provincia de Corrientes</p>
+      </section>
+
 
       {/* SECCIÓN: GRÁFICOS */}
       <section className="section-group">

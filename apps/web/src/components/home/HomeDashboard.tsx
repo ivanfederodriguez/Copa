@@ -91,7 +91,8 @@ function KpiCard({
   subtitle?: ReactNode;
 }) {
   return (
-    <article className="kpi-card" style={{ flex: "1 1 300px", maxWidth: "350px" }}>
+    <article className="kpi-card">
+
       <div className="info-tooltip" data-tooltip={tooltip}>
         ?
       </div>
@@ -455,7 +456,8 @@ export default function HomeDashboard() {
     <>
       <header className="dashboard-header">
         <div className="title-block">
-          <h1 className="text-gradient dashboard-title">Tablero Ejecutivo Provincial</h1>
+          <h1 className="dashboard-title">Tablero Ejecutivo Provincial</h1>
+
         </div>
         <div className="period-select-wrapper">
           <label htmlFor="monthSelector" className="period-label">

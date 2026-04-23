@@ -5,9 +5,9 @@ import DashboardShell from "@/components/layout/DashboardShell";
 import { useDashboardSession } from "@/hooks/useDashboardSession";
 
 export default function HomePage() {
-  const { user, displayName, logout, ready } = useDashboardSession();
+  const { user, displayName, logout, ready } = useDashboardSession({ required: false });
 
-  if (!ready || !user) {
+  if (!ready) {
     return null;
   }
 
@@ -15,11 +15,12 @@ export default function HomePage() {
     <DashboardShell
       activePath="/"
       displayName={displayName}
-      username={user.username}
-      name={user.name}
+      username={user?.username}
+      name={user?.name}
       onLogout={logout}
     >
       <HomeDashboard />
     </DashboardShell>
   );
 }
+

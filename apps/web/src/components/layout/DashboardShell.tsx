@@ -124,19 +124,30 @@ export default function DashboardShell({
         </nav>
 
         <div className="sidebar-footer">
-          <div className="nav-user-header">
-            <span className="user-icon">👤</span>
-            <span className="user-name">{displayName}</span>
-            <button type="button" className="btn-logout-header" title="Cerrar sesión" onClick={onLogout}>
-              Salir
-            </button>
-          </div>
+          {displayName === "Invitado" ? (
+            <Link href="/login" className="btn-login-sidebar">
+              <span className="login-icon">🔐</span> Iniciar Sesión
+            </Link>
+          ) : (
+            <div className="nav-user-header">
+              <span className="user-icon">👤</span>
+              <span className="user-name">{displayName}</span>
+              <button type="button" className="btn-logout-header" title="Cerrar sesión" onClick={onLogout}>
+                Salir
+              </button>
+            </div>
+          )}
         </div>
+
+
       </aside>
 
       <div className="main-content-wrapper">
-        {children}
+        <main>
+          {children}
+        </main>
         <footer className="app-footer">
+
           <div className="footer-content">
             <div className="footer-branding">
               <Image
