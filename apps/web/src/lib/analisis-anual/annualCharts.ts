@@ -21,9 +21,9 @@ export function buildMonthlyAnnualData(
   prevYear: number,
   isMobile: boolean,
 ): ChartData<"bar"> {
-  let chartLabels = [...monthlyData.labels];
-  let dataCurrNet = [...monthlyData.data_curr];
-  let dataPrevNet = [...monthlyData.data_prev];
+  let chartLabels = Array.isArray(monthlyData?.labels) ? [...monthlyData.labels] : [];
+  let dataCurrNet = Array.isArray(monthlyData?.data_curr) ? [...monthlyData.data_curr] : [];
+  let dataPrevNet = Array.isArray(monthlyData?.data_prev) ? [...monthlyData.data_prev] : [];
 
   if (isMobile) {
     const quarterLabels = ["T1", "T2", "T3", "T4"];
@@ -121,9 +121,9 @@ export function buildCopaVsAnnualMixed(
   dataCopa: CopaVsAnnualShape,
   isMobile: boolean,
 ): ChartData<"bar" | "line"> {
-  let chartLabels = [...dataCopa.labels];
-  let cumulativeCopaNet = [...dataCopa.cumulative_copa];
-  let salarioTarget = [...dataCopa.salario_target];
+  let chartLabels = Array.isArray(dataCopa?.labels) ? [...dataCopa.labels] : [];
+  let cumulativeCopaNet = Array.isArray(dataCopa?.cumulative_copa) ? [...dataCopa.cumulative_copa] : [];
+  let salarioTarget = Array.isArray(dataCopa?.salario_target) ? [...dataCopa.salario_target] : [];
 
   if (isMobile) {
     const quarterEndIndices = [2, 5, 8, 11];

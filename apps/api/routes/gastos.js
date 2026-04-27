@@ -78,9 +78,12 @@ router.get('/all-data', authMiddleware, async (req, res) => {
             FROM copa_gastos 
             ORDER BY periodo DESC
         `);
-        
-        // El frontend espera un array de objetos GastoRow
-        res.json(result.rows);
+        // El frontend espera un array de objetos GastoRow con monto como número
+        const rows = result.rows.map(r => ({
+            ...r,
+            monto: parseFloat(r.monto)
+        }));
+        res.json(rows);
     } catch (err) {
         console.error('Error al obtener todos los gastos:', err.message);
         res.status(500).json({ message: 'Error al obtener datos' });

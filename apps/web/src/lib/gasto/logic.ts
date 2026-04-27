@@ -51,6 +51,7 @@ export type HeatmapInput = {
 export function computeHeatmap({ rawData, estado, jurisGroup, fuenteFilter }: HeatmapInput) {
   const periodos = [...new Set(rawData.map((d) => d.periodo))].sort();
   const ultimoPeriodo = periodos.length > 0 ? periodos[periodos.length - 1] : "";
+  const currentYear = ultimoPeriodo.split("-")[0]; // Extraemos el año fiscal actual (ej: "2026")
 
   const matchFuente = (d: GastoRow) => {
     if (!fuenteFilter || fuenteFilter.length === 0 || fuenteFilter.length === FUENTE_VALUES.length)
@@ -65,7 +66,14 @@ export function computeHeatmap({ rawData, estado, jurisGroup, fuenteFilter }: He
     if (!matchFuente(d)) return;
     const j = (d.jurisdiccion || "").trim();
     const key = `${d.partida}|${j}`;
-    if (d.estado === estado) estadoAcum[key] = (estadoAcum[key] || 0) + d.monto;
+    const rowYear = d.periodo.split("-")[0];
+
+    // IMPORTANTE: Solo acumulamos datos del año fiscal actual para evitar inflar porcentajes con años anteriores
+    if (rowYear === currentYear) {
+      if (d.estado === estado) estadoAcum[key] = (estadoAcum[key] || 0) + d.monto;
+    }
+    
+    // El crédito vigente lo tomamos siempre del último mes reportado para ese año
     if (d.estado === "Credito Vigente" && d.periodo === ultimoPeriodo) vigente[key] = (vigente[key] || 0) + d.monto;
   });
 
