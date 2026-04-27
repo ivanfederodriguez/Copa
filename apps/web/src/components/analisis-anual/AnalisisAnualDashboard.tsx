@@ -63,7 +63,12 @@ export default function AnalisisAnualDashboard() {
 
   useEffect(() => {
     let c = false;
-    fetch("/data/_data_ipce_v1.json")
+    const token = localStorage.getItem("copa_token");
+    fetch("/api/ron/annual-monitor", {
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    })
       .then((r) => {
         if (!r.ok) throw new Error("No se pudieron cargar los datos.");
         return r.json() as Promise<AnnualMeta>;

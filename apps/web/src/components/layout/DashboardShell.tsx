@@ -21,7 +21,8 @@ function hideGastoTab(username?: string, displayName?: string) {
   return (
     u === "jpvaldes" ||
     u === "gobernador" ||
-    n === "Gob. JP. Valdes"
+    n === "Gob. JP. Valdes" ||
+    n === "Gob. JP. Valdés"
   );
 }
 
@@ -52,7 +53,7 @@ export default function DashboardShell({
   const navClass = (path: string) =>
     `nav-link-vertical${activePath === path ? " active" : ""}`;
 
-  const gastoHidden = hideGastoTab(username, name);
+  const gastoHidden = hideGastoTab(username, displayName);
 
   return (
     <>
@@ -113,7 +114,6 @@ export default function DashboardShell({
               <Link
                 href="/analisis-personal"
                 className={navClass("/analisis-personal")}
-                style={{ display: "none" }}
                 onClick={() => setSidebarOpen(false)}
               >
                 Análisis Salarial

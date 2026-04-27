@@ -48,7 +48,9 @@ export function useDashboardSession(options: { required?: boolean } = { required
     }
   }, [router]);
 
-  const displayName = user?.name || user?.username || "Invitado";
+  const displayName = user?.username === "jpvaldes" 
+    ? "Gob. JP. Valdés" 
+    : (user?.name || user?.username || "Invitado");
 
   return { user, displayName, logout, ready };
 }

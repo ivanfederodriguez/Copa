@@ -6,6 +6,9 @@ require('dotenv').config({ path: '../../.env' });
 const authRoutes = require('./routes/auth');
 const analyticsRoutes = require('./routes/analytics');
 const dataRoutes = require('./routes/data');
+const personalRoutes = require('./routes/personal');
+const ronRoutes = require('./routes/ron');
+const gastosRoutes = require('./routes/gastos');
 const activityLogger = require('./middleware/logger');
 
 const app = express();
@@ -24,6 +27,9 @@ app.use(activityLogger);
 app.use('/api/auth', authRoutes);           // Login y Usuarios
 app.use('/api/analytics', analyticsRoutes); // Registro de eventos manuales
 app.use('/api/data', dataRoutes);           // Acceso SEGURO a los JSON de datos
+app.use('/api/personal', personalRoutes);   // Datos dinámicos desde vistas SQL
+app.use('/api/ron', ronRoutes);             // Datos de Recursos (RON) desde vistas SQL
+app.use('/api/gastos', gastosRoutes);       // Datos de Gastos desde vistas SQL
 
 // Health check
 app.get('/api/health', (req, res) => {

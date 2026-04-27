@@ -15,7 +15,8 @@ export default function GastoPage() {
       user &&
       (user.username === "jpvaldes" ||
         user.username === "gobernador" ||
-        user.name === "Gob. JP. Valdes")
+        user.name === "Gob. JP. Valdes" ||
+        user.name === "Gob. JP. Valdés")
     ) {
       router.replace("/");
     }
@@ -28,7 +29,8 @@ export default function GastoPage() {
   if (
     user.username === "jpvaldes" ||
     user.username === "gobernador" ||
-    user.name === "Gob. JP. Valdes"
+    user.name === "Gob. JP. Valdes" ||
+    user.name === "Gob. JP. Valdés"
   ) {
     return null;
   }
