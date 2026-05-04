@@ -420,7 +420,7 @@ h3 {
 
 main {
   flex: 1;
-  max-width: 1400px;
+  max-width: 1600px;
   margin: 0 auto;
   width: 100%;
   padding: 2rem 2rem;
@@ -458,6 +458,7 @@ main:has(.heatmap-section) {
   display: flex;
   justify-content: space-between;
   align-items: stretch;
+  flex-wrap: wrap;
   gap: 1.5rem;
   width: 100%;
   padding: 0 3%;
@@ -483,7 +484,7 @@ main:has(.heatmap-section) {
 }
 
 .kpi-card {
-  flex: 1;
+  flex: 1 1 220px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
