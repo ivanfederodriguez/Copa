@@ -1,5 +1,6 @@
 import os
 import json
+import calendar
 import mysql.connector
 import psycopg2
 import pandas as pd
@@ -492,8 +493,8 @@ def process_data(df_daily, df_salary, df_ipc, df_esperada, df_reca_prov):
         7: "Julio", 8: "Agosto", 9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"
     }
 
-    # 1. Prepare Daily Data Template
-    all_days = pd.DataFrame({'day': range(1, 32)})
+    # 1. Daily Data Template is now created per-month inside the loop
+    #    using calendar.monthrange() to get the correct number of days.
 
     # Track completeness to find default
     default_period_id = None
@@ -504,6 +505,10 @@ def process_data(df_daily, df_salary, df_ipc, df_esperada, df_reca_prov):
         iter_year = int(row.year)
         m = int(row.month)
         prev_year = iter_year - 1
+        
+        # Dynamic days-in-month (handles leap years automatically)
+        days_in_month = calendar.monthrange(iter_year, m)[1]
+        all_days = pd.DataFrame({'day': range(1, days_in_month + 1)})
         
         month_label = MONTH_NAMES.get(m, str(m))
         period_id = f"{iter_year}-{m:02d}"
